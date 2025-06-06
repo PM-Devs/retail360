@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Retail360 - Run Your Shop From Your Phone</title>
+   <link href="statics\css\index.css"  rel="stylesheet">
+</head>
+<body>
+    <!-- Preloader -->
+    <div class="preloader" id="preloader">
+        <div class="preloader-logo">Retail360</div>
+        <div class="preloader-spinner"></div>
+        <div class="preloader-text" id="preloader-text">Loading your retail solution...</div>
+        <div class="preloader-progress">
+            <div class="preloader-progress-bar" id="progress-bar"></div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content" id="main-content">
+    <header>
+        <nav class="container">
+            <div class="logo">Retail360</div>
+            <ul class="nav-links">
+                <li><a href="#features">Features</a></li>
+                <li><a href="#pricing">Pricing</a></li>
+                <li><a href="#contact">Contact</a></li>
+            </ul>
+            <a href="#" class="cta-nav" onclick="redirectToMain('login')">Login</a>
+            <button class="mobile-menu-btn">☰</button>
+        </nav>
+    </header>
+
+    <section class="hero">
+        <div class="container">
+            <div class="hero-content">
+                <h1>Run Your Entire Shop From Your Phone</h1>
+                <p class="hero-subtitle">
+                    Track stock, record sales, get daily reports, and sell faster using QR codes. 
+                    Perfect for mini-marts, provision stores, and any retail business in Ghana.
+                </p>
+                <div class="hero-cta">
+                    <button class="btn-primary" onclick="redirectToMain('signup')">Get Started Free</button>
+                    <button class="btn-secondary" onclick="redirectToMain('demo')">See Demo</button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="problem-solution">
+        <div class="container">
+            <div class="problem-solution-grid">
+                <div class="fade-in">
+                    <h2>Are You Tired Of...</h2>
+                    <ul class="problem-list">
+                        <li>Losing track of your stock levels</li>
+                        <li>Having no sales data or daily reports</li>
+                        <li>Relying on notebooks and memory</li>
+                        <li>Expensive POS systems that need computers</li>
+                        <li>Slow checkout processes</li>
+                        <li>Manual receipt writing</li>
+                    </ul>
+                </div>
+                <div class="fade-in">
+                    <h2>Now You Can...</h2>
+                    <ul class="solution-list">
+                        <li>Monitor stock levels in real-time</li>
+                        <li>Get automatic daily sales reports via WhatsApp</li>
+                        <li>Access everything from your phone or tablet</li>
+                        <li>Use affordable QR code technology</li>
+                        <li>Speed up sales with QR scanning</li>
+                        <li>Print or share digital receipts instantly</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="features" id="features">
+        <div class="container">
+            <div class="section-title fade-in">
+                <h2>Everything You Need to Run Your Shop</h2>
+                <p>Mobile-first design built specifically for Ghanaian retail businesses</p>
+            </div>
+            <div class="features-grid">
+                <div class="feature-card fade-in">
+                    <div class="feature-icon">📱</div>
+                    <h3>Mobile Point of Sale</h3>
+                    <p>Sell products directly from your phone or tablet. Add discounts, track totals, and process cash or MoMo payments instantly.</p>
+                </div>
+                <div class="feature-card fade-in">
+                    <div class="feature-icon">📊</div>
+                    <h3>Smart Inventory Management</h3>
+                    <p>Add, edit, and monitor products. Set low-stock alerts and handle restocking from suppliers with ease.</p>
+                </div>
+                <div class="feature-card fade-in">
+                    <div class="feature-icon">📱</div>
+                    <h3>QR Code Super Selling</h3>
+                    <p>Auto-generate printable QR codes for all products. Scan with your phone camera to instantly add items to sale - no expensive scanners needed!</p>
+                </div>
+                <div class="feature-card fade-in">
+                    <div class="feature-icon">📱</div>
+                    <h3>WhatsApp Daily Reports</h3>
+                    <p>Get automatic daily sales and stock summaries sent directly to your WhatsApp. No need to log in every day!</p>
+                </div>
+                <div class="feature-card fade-in">
+                    <div class="feature-icon">☁️</div>
+                    <h3>Works Offline & Online</h3>
+                    <p>Record sales without internet connection. Data automatically syncs when connection is restored.</p>
+                </div>
+                <div class="feature-card fade-in">
+                    <div class="feature-icon">🇬🇭</div>
+                    <h3>Ghana-Style Pricing</h3>
+                    <p>Sell by sachet, kilo, bottle, or "GHC 2" packs. Track bulk and small-pack sales separately with local pricing support.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="pricing" id="pricing">
+        <div class="container">
+            <div class="section-title fade-in">
+                <h2>Simple, Affordable Pricing</h2>
+                <p>Start free and upgrade when your business grows</p>
+            </div>
+            <div class="pricing-cards">
+                <div class="pricing-card fade-in">
+                    <h3>Basic (Free)</h3>
+                    <div class="price">GHS 0<span>/month</span></div>
+                    <ul style="text-align: left; margin: 2rem 0;">
+                        <li>✅ Up to 50 products</li>
+                        <li>✅ Basic POS features</li>
+                        <li>✅ QR code generation</li>
+                        <li>✅ Digital receipts</li>
+                        <li>✅ Single user access</li>
+                    </ul>
+                    <button class="btn-primary" onclick="redirectToMain('signup')" style="background: #667eea; color: white;">Start Free</button>
+                </div>
+                <div class="pricing-card featured fade-in">
+                    <h3>Pro</h3>
+                    <div class="price">GHS 25<span>/month</span></div>
+                    <ul style="text-align: left; margin: 2rem 0;">
+                        <li>✅ Unlimited products</li>
+                        <li>✅ Multiple staff access</li>
+                        <li>✅ Daily WhatsApp reports</li>
+                        <li>✅ Customer loyalty system</li>
+                        <li>✅ Advanced analytics</li>
+                        <li>✅ Priority support</li>
+                    </ul>
+                    <button class="btn-primary" onclick="redirectToMain('signup')" style="background: white; color: #667eea;">Start Pro Trial</button>
+                </div>
+                <div class="pricing-card fade-in">
+                    <h3>Enterprise</h3>
+                    <div class="price">GHS 50<span>/month</span></div>
+                    <ul style="text-align: left; margin: 2rem 0;">
+                        <li>✅ Everything in Pro</li>
+                        <li>✅ Multi-branch support</li>
+                        <li>✅ Supplier management</li>
+                        <li>✅ Custom reports</li>
+                        <li>✅ API access</li>
+                        <li>✅ Phone & WhatsApp support</li>
+                    </ul>
+                    <button class="btn-primary" onclick="redirectToMain('contact')" style="background: #667eea; color: white;">Contact Sales</button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="final-cta">
+        <div class="container">
+            <h2>Ready to Transform Your Shop?</h2>
+            <p>Join hundreds of Ghanaian retailers already using Retail360 to grow their business</p>
+            <div style="margin-top: 2rem;">
+                <button class="btn-primary" onclick="redirectToMain('signup')" style="margin-right: 1rem;">Start Your Free Trial</button>
+                <button class="btn-secondary" onclick="redirectToMain('demo')">Book a Demo</button>
+            </div>
+        </div>
+    </section>
+
+    <footer>
+        <div class="container">
+            <p>&copy; 2025 Retail360. Built for Ghanaian retailers, by Ghanaians. 🇬🇭</p>
+        </div>
+    </footer>
+    </div> <!-- End main-content -->
+
+    <script src="statics\js\index.js"></script>
+</body>
+</html>
