@@ -260,31 +260,29 @@ const Dashboard = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Mobile overlay for sidebar */}
-      {sidebarOpen && (
-        <div 
-          className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
-          onClick={() => setSidebarOpen(false)}
-        />
-      )}
-
-      {/* Sidebar - Responsive positioning */}
-      <div className={`fixed left-0 top-0 h-full z-50 transition-transform duration-300 lg:z-40 ${
-        sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
-      } ${sidebarOpen ? 'w-64' : 'lg:w-20'}`}>
+      {/* Sidebar - Fixed positioning with proper z-index and responsive behavior */}
+      <div className={`fixed left-0 top-0 h-full z-40 transition-all duration-300 ${sidebarOpen ? 'w-64' : 'w-20'} ${sidebarOpen ? 'lg:block' : 'lg:block'} ${sidebarOpen ? 'block' : 'hidden'} lg:block`}>
         <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
       </div>
       
-      {/* Main content area - Responsive margins */}
-      <div className={`flex-1 transition-all duration-300 ${
-        sidebarOpen ? 'lg:ml-64' : 'lg:ml-20'
-      }`}>
-        {/* Navbar - Fixed at top with proper z-index */}
-        <div className="fixed top-0 right-0 z-30 transition-all duration-300" style={{ left: sidebarOpen ? '256px' : '80px' }}>
-          <Navbar 
-            onMenuClick={() => setSidebarOpen(!sidebarOpen)} 
-            title={'Dashboard'}
-          />
+      {/* Overlay for mobile sidebar */}
+      {sidebarOpen && (
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-50 z-30 lg:hidden"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+      
+      {/* Main content area - Adjusted for sidebar with responsive margins */}
+      <div className={`flex-1 transition-all duration-300 ${sidebarOpen ? 'lg:ml-64' : 'lg:ml-20'} ml-0`}>
+        {/* Navbar - Fixed at top with proper z-index and responsive positioning */}
+        <div className="fixed top-0 right-0 left-0 lg:left-auto z-30 transition-all duration-300" style={{ left: sidebarOpen ? '0' : '0' }}>
+          <div className={`transition-all duration-300 ${sidebarOpen ? 'lg:ml-64' : 'lg:ml-20'} ml-0`}>
+            <Navbar 
+              onMenuClick={() => setSidebarOpen(!sidebarOpen)} 
+              title={'Products'}
+            />
+          </div>
         </div>
 
         {/* Dashboard Content */}
