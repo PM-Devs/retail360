@@ -280,7 +280,7 @@ const Dashboard = () => {
           <div className={`transition-all duration-300 ${sidebarOpen ? 'lg:ml-64' : 'lg:ml-20'} ml-0`}>
             <Navbar 
               onMenuClick={() => setSidebarOpen(!sidebarOpen)} 
-              title={'Products'}
+              title={'Dashboard'}
             />
           </div>
         </div>
