@@ -84,7 +84,96 @@ const SettingsProfile = () => {
 
   const handleSave = () => {
     console.log('Saving settings and profile...', { profile, settings, passwords });
-    // Add your save logic here
+    
+    // API Calls to be implemented:
+    
+    // 1. Update Profile API Call
+    // try {
+    //   const profileResponse = await fetch('/api/user/profile', {
+    //     method: 'PUT',
+    //     headers: {
+    //       'Content-Type': 'application/json',
+    //       'Authorization': `Bearer ${localStorage.getItem('token')}`
+    //     },
+    //     body: JSON.stringify({
+    //       firstName: profile.firstName,
+    //       lastName: profile.lastName,
+    //       email: profile.email,
+    //       phone: profile.phone,
+    //       shopName: profile.shopName
+    //     })
+    //   });
+    //   const profileData = await profileResponse.json();
+    //   console.log('Profile updated:', profileData);
+    // } catch (error) {
+    //   console.error('Failed to update profile:', error);
+    // }
+
+    // 2. Update Settings API Call
+    // try {
+    //   const settingsResponse = await fetch('/api/user/settings', {
+    //     method: 'PUT',
+    //     headers: {
+    //       'Content-Type': 'application/json',
+    //       'Authorization': `Bearer ${localStorage.getItem('token')}`
+    //     },
+    //     body: JSON.stringify(settings)
+    //   });
+    //   const settingsData = await settingsResponse.json();
+    //   console.log('Settings updated:', settingsData);
+    // } catch (error) {
+    //   console.error('Failed to update settings:', error);
+    // }
+
+    // 3. Change Password API Call (if password fields are filled)
+    // if (passwords.currentPassword && passwords.newPassword && passwords.confirmPassword) {
+    //   if (passwords.newPassword !== passwords.confirmPassword) {
+    //     alert('New passwords do not match');
+    //     return;
+    //   }
+    //   try {
+    //     const passwordResponse = await fetch('/api/user/change-password', {
+    //       method: 'PUT',
+    //       headers: {
+    //         'Content-Type': 'application/json',
+    //         'Authorization': `Bearer ${localStorage.getItem('token')}`
+    //       },
+    //       body: JSON.stringify({
+    //         currentPassword: passwords.currentPassword,
+    //         newPassword: passwords.newPassword
+    //       })
+    //     });
+    //     const passwordData = await passwordResponse.json();
+    //     console.log('Password updated:', passwordData);
+    //     // Clear password fields after successful update
+    //     setPasswords({
+    //       currentPassword: '',
+    //       newPassword: '',
+    //       confirmPassword: ''
+    //     });
+    //   } catch (error) {
+    //     console.error('Failed to update password:', error);
+    //   }
+    // }
+
+    // 4. Upload Avatar API Call (if avatar file is selected)
+    // if (profile.avatar instanceof File) {
+    //   const formData = new FormData();
+    //   formData.append('avatar', profile.avatar);
+    //   try {
+    //     const avatarResponse = await fetch('/api/user/avatar', {
+    //       method: 'POST',
+    //       headers: {
+    //         'Authorization': `Bearer ${localStorage.getItem('token')}`
+    //       },
+    //       body: formData
+    //     });
+    //     const avatarData = await avatarResponse.json();
+    //     console.log('Avatar updated:', avatarData);
+    //   } catch (error) {
+    //     console.error('Failed to upload avatar:', error);
+    //   }
+    // }
   };
 
   const tabs = [
@@ -97,26 +186,36 @@ const SettingsProfile = () => {
   return (
     <div className="min-h-screen bg-gray-50 flex">
      
-  {/* Sidebar - Fixed positioning with proper z-index */}
-      <div className={`fixed left-0 top-0 h-full z-40 transition-all duration-300 ${sidebarOpen ? 'w-64' : 'w-20'}`}>
+      {/* Sidebar - Fixed positioning with proper z-index - Hidden on mobile */}
+      <div className={`fixed left-0 top-0 h-full z-40 transition-all duration-300 ${sidebarOpen ? 'w-64' : 'w-20'} hidden lg:block`}>
+        <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+      </div>
+      
+      {/* Mobile Sidebar Overlay */}
+      {sidebarOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-30 lg:hidden" onClick={() => setSidebarOpen(false)} />
+      )}
+      
+      {/* Mobile Sidebar */}
+      <div className={`fixed left-0 top-0 h-full z-40 transition-all duration-300 w-64 lg:hidden ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
         <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
       </div>
       
       {/* Main content area - Adjusted for sidebar */}
-      <div className={`flex-1 transition-all duration-300 ${sidebarOpen ? 'ml-64' : 'ml-20'}`}>
+      <div className={`flex-1 transition-all duration-300 lg:ml-64 ${sidebarOpen ? 'lg:ml-64' : 'lg:ml-20'}`}>
         {/* Navbar - Fixed at top with proper z-index */}
-        <div className="fixed top-0 right-0 z-30 transition-all duration-300" style={{ left: sidebarOpen ? '256px' : '80px' }}>
+        <div className="fixed top-0 right-0 left-0 z-30 transition-all duration-300 lg:left-64" style={{ left: window.innerWidth >= 1024 ? (sidebarOpen ? '256px' : '80px') : '0px' }}>
           <Navbar 
             onMenuClick={() => setSidebarOpen(!sidebarOpen)} 
-             title="Settings & Profile"
+            title="Settings & Profile"
           />
         </div>
 
         {/* Content Area */}
-        <div className="flex-1 p-8 sm:p-9 lg:p-12 ">
+        <div className="flex-1 p-4 sm:p-6 lg:p-8 pt-20 lg:pt-24">
           <div className="max-w-7xl mx-auto">
             {/* Header with Save Button */}
-            <div className="flex items-center justify-between mb-8">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 sm:mb-8 gap-4">
               <div className="flex items-center">
                 <div className="w-10 h-10 bg-black rounded-lg flex items-center justify-center">
                   <Settings className="w-6 h-6 text-white" />
@@ -127,31 +226,31 @@ const SettingsProfile = () => {
               </div>
               <button
                 onClick={handleSave}
-                className="bg-black text-white px-6 py-2 rounded-lg hover:bg-gray-800 transition-colors flex items-center gap-2"
+                className="bg-black text-white px-4 sm:px-6 py-2 rounded-lg hover:bg-gray-800 transition-colors flex items-center gap-2 w-full sm:w-auto justify-center"
               >
                 <Save className="w-4 h-4" />
                 Save Changes
               </button>
             </div>
 
-            <div className="flex gap-8">
-              {/* Sidebar Navigation */}
-              <div className="w-64 bg-white rounded-xl shadow-sm border border-gray-200 p-6 h-fit">
-                <nav className="space-y-2">
+            <div className="flex flex-col lg:flex-row gap-6 lg:gap-8">
+              {/* Sidebar Navigation - Mobile horizontal scroll, Desktop vertical */}
+              <div className="lg:w-64 bg-white rounded-xl shadow-sm border border-gray-200 p-4 lg:p-6 h-fit">
+                <nav className="flex lg:flex-col space-x-2 lg:space-x-0 lg:space-y-2 overflow-x-auto lg:overflow-x-visible">
                   {tabs.map((tab) => {
                     const Icon = tab.icon;
                     return (
                       <button
                         key={tab.id}
                         onClick={() => setActiveTab(tab.id)}
-                        className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-left transition-colors ${
+                        className={`flex items-center gap-3 px-4 py-3 rounded-lg text-left transition-colors whitespace-nowrap flex-shrink-0 lg:w-full ${
                           activeTab === tab.id
                             ? 'bg-black text-white'
                             : 'text-gray-600 hover:bg-gray-50'
                         }`}
                       >
                         <Icon className="w-5 h-5" />
-                        {tab.label}
+                        <span className="hidden sm:inline">{tab.label}</span>
                       </button>
                     );
                   })}
@@ -164,14 +263,14 @@ const SettingsProfile = () => {
                 {activeTab === 'profile' && (
                   <div className="space-y-6">
                     {/* Profile Card */}
-                    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6">
                       <div className="flex items-center justify-between mb-6">
                         <h2 className="text-xl font-semibold text-black">Profile Information</h2>
                         <Edit3 className="w-5 h-5 text-gray-400" />
                       </div>
 
                       {/* Avatar Section */}
-                      <div className="flex items-center gap-6 mb-8">
+                      <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6 mb-8">
                         <div className="relative">
                           <div className="w-24 h-24 bg-black rounded-full flex items-center justify-center text-white text-2xl font-bold">
                             {profile.avatar ? (
@@ -184,7 +283,7 @@ const SettingsProfile = () => {
                             <Camera className="w-4 h-4 text-gray-600" />
                           </button>
                         </div>
-                        <div>
+                        <div className="text-center sm:text-left">
                           <h3 className="text-lg font-medium text-black">{profile.firstName} {profile.lastName}</h3>
                           <p className="text-gray-600">{profile.role}</p>
                           <p className="text-gray-500 text-sm">{profile.shopName}</p>
@@ -192,7 +291,7 @@ const SettingsProfile = () => {
                       </div>
 
                       {/* Profile Form */}
-                      <div className="grid grid-cols-2 gap-6">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                         <div>
                           <label className="block text-sm font-medium text-black mb-2">First Name</label>
                           <input
@@ -211,7 +310,7 @@ const SettingsProfile = () => {
                             className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent outline-none"
                           />
                         </div>
-                        <div>
+                        <div className="sm:col-span-2">
                           <label className="block text-sm font-medium text-black mb-2">Email</label>
                           <input
                             type="email"
@@ -238,7 +337,7 @@ const SettingsProfile = () => {
                             className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-gray-50 text-gray-500"
                           />
                         </div>
-                        <div>
+                        <div className="sm:col-span-2">
                           <label className="block text-sm font-medium text-black mb-2">Shop Name</label>
                           <input
                             type="text"
@@ -256,9 +355,9 @@ const SettingsProfile = () => {
                 {activeTab === 'settings' && (
                   <div className="space-y-6">
                     {/* Preferences */}
-                    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6">
                       <h2 className="text-xl font-semibold text-black mb-6">Preferences</h2>
-                      <div className="grid grid-cols-2 gap-6">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                         <div>
                           <label className="block text-sm font-medium text-black mb-2">Theme</label>
                           <select
@@ -318,9 +417,9 @@ const SettingsProfile = () => {
                 {activeTab === 'security' && (
                   <div className="space-y-6">
                     {/* Change Password */}
-                    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6">
                       <h2 className="text-xl font-semibold text-black mb-6">Change Password</h2>
-                      <div className="space-y-4 max-w-md">
+                      <div className="space-y-4 max-w-full sm:max-w-md">
                         <div>
                           <label className="block text-sm font-medium text-black mb-2">Current Password</label>
                           <div className="relative">
@@ -379,10 +478,10 @@ const SettingsProfile = () => {
                     </div>
 
                     {/* Security Settings */}
-                    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6">
                       <h2 className="text-xl font-semibold text-black mb-6">Security Settings</h2>
                       <div className="space-y-6">
-                        <div className="flex items-center justify-between">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                           <div>
                             <h3 className="font-medium text-black">Two-Factor Authentication</h3>
                             <p className="text-sm text-gray-600">Add an extra layer of security to your account</p>
@@ -397,7 +496,7 @@ const SettingsProfile = () => {
                             <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-black"></div>
                           </label>
                         </div>
-                        <div className="flex items-center justify-between">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                           <div>
                             <h3 className="font-medium text-black">Login Alerts</h3>
                             <p className="text-sm text-gray-600">Get notified of new login attempts</p>
@@ -418,7 +517,7 @@ const SettingsProfile = () => {
                             type="number"
                             value={settings.security.sessionTimeout}
                             onChange={(e) => handleSettingChange('security', 'sessionTimeout', parseInt(e.target.value))}
-                            className="w-32 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent outline-none"
+                            className="w-full sm:w-32 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent outline-none"
                           />
                         </div>
                       </div>
@@ -428,10 +527,10 @@ const SettingsProfile = () => {
 
                 {/* Notifications Tab */}
                 {activeTab === 'notifications' && (
-                  <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                  <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6">
                     <h2 className="text-xl font-semibold text-black mb-6">Notification Preferences</h2>
                     <div className="space-y-6">
-                      <div className="flex items-center justify-between">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                         <div>
                           <h3 className="font-medium text-black">Low Stock Alerts</h3>
                           <p className="text-sm text-gray-600">Get notified when products are running low</p>
@@ -446,7 +545,7 @@ const SettingsProfile = () => {
                           <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-black"></div>
                         </label>
                       </div>
-                      <div className="flex items-center justify-between">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                         <div>
                           <h3 className="font-medium text-black">New Orders</h3>
                           <p className="text-sm text-gray-600">Get notified of new customer orders</p>
@@ -461,7 +560,7 @@ const SettingsProfile = () => {
                           <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-black"></div>
                         </label>
                       </div>
-                      <div className="flex items-center justify-between">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                         <div>
                           <h3 className="font-medium text-black">Daily Reports</h3>
                           <p className="text-sm text-gray-600">Receive daily sales and inventory reports</p>
@@ -476,9 +575,9 @@ const SettingsProfile = () => {
                           <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-black"></div>
                         </label>
                       </div>
-                      <div className="flex items-center justify-between">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                         <div>
-                          <h3 className="font-medium text-black">System Updates</h3>
+                         <h3 className="font-medium text-black">System Updates</h3>
                           <p className="text-sm text-gray-600">Get notified of system updates and maintenance</p>
                         </div>
                         <label className="relative inline-flex items-center cursor-pointer">
@@ -500,7 +599,7 @@ const SettingsProfile = () => {
         </div>
 
         {/* Footer */}
-        <div className="bg-white border-t border-gray-200 mt-12">
+        <div className="bg-white border-t border-gray-200 mt-8 sm:mt-12">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
             <p className="text-xs text-gray-500 italic flex items-center justify-center">
               Powered by
@@ -514,15 +613,13 @@ const SettingsProfile = () => {
         </div>
       </div>
 
-      {/* Floating Chat Button */}
+      {/* Floating Chat Button - Adjusted for mobile */}
       <button
         onClick={() => setShowChatBot(true)}
-          className="fixed bottom-6 right-6 w-14 h-14 bg-black rounded-full flex items-center justify-center shadow-lg hover:bg-gray-800 transition-colors z-30"
+        className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 w-12 h-12 sm:w-14 sm:h-14 bg-black rounded-full flex items-center justify-center shadow-lg hover:bg-gray-800 transition-colors z-30"
       >
-        <Bot className="text-white w-6 h-6" />
+        <Bot className="text-white w-5 h-5 sm:w-6 sm:h-6" />
       </button>
-
-     
 
       {/* ChatBot */}
       <ChatBot 
@@ -535,3 +632,151 @@ const SettingsProfile = () => {
 };
 
 export default SettingsProfile;
+
+// Additional API calls that can be implemented:
+
+// 1. GET Profile Data on Component Mount
+// useEffect(() => {
+//   const fetchProfileData = async () => {
+//     try {
+//       const response = await fetch('/api/user/profile', {
+//         headers: {
+//           'Authorization': `Bearer ${localStorage.getItem('token')}`
+//         }
+//       });
+//       const data = await response.json();
+//       setProfile(data);
+//     } catch (error) {
+//       console.error('Failed to fetch profile data:', error);
+//     }
+//   };
+//   fetchProfileData();
+// }, []);
+
+// 2. GET Settings Data on Component Mount
+// useEffect(() => {
+//   const fetchSettingsData = async () => {
+//     try {
+//       const response = await fetch('/api/user/settings', {
+//         headers: {
+//           'Authorization': `Bearer ${localStorage.getItem('token')}`
+//         }
+//       });
+//       const data = await response.json();
+//       setSettings(data);
+//     } catch (error) {
+//       console.error('Failed to fetch settings data:', error);
+//     }
+//   };
+//   fetchSettingsData();
+// }, []);
+
+// 3. Handle Avatar File Upload
+// const handleAvatarChange = (event) => {
+//   const file = event.target.files[0];
+//   if (file) {
+//     const reader = new FileReader();
+//     reader.onload = (e) => {
+//       setProfile(prev => ({ ...prev, avatar: e.target.result }));
+//     };
+//     reader.readAsDataURL(file);
+//   }
+// };
+
+// 4. Validate Password Strength
+// const validatePassword = (password) => {
+//   const minLength = 8;
+//   const hasUpperCase = /[A-Z]/.test(password);
+//   const hasLowerCase = /[a-z]/.test(password);
+//   const hasNumbers = /\d/.test(password);
+//   const hasSpecialChar = /[!@#$%^&*(),.?":{}|<>]/.test(password);
+//   
+//   return {
+//     isValid: password.length >= minLength && hasUpperCase && hasLowerCase && hasNumbers && hasSpecialChar,
+//     errors: {
+//       minLength: password.length < minLength,
+//       hasUpperCase: !hasUpperCase,
+//       hasLowerCase: !hasLowerCase,
+//       hasNumbers: !hasNumbers,
+//       hasSpecialChar: !hasSpecialChar
+//     }
+//   };
+// };
+
+// 5. Two-Factor Authentication Setup API
+// const setupTwoFactor = async () => {
+//   try {
+//     const response = await fetch('/api/user/two-factor/setup', {
+//       method: 'POST',
+//       headers: {
+//         'Content-Type': 'application/json',
+//         'Authorization': `Bearer ${localStorage.getItem('token')}`
+//       }
+//     });
+//     const data = await response.json();
+//     // Show QR code or setup instructions
+//     console.log('Two-factor setup data:', data);
+//   } catch (error) {
+//     console.error('Failed to setup two-factor authentication:', error);
+//   }
+// };
+
+// 6. Email Verification API
+// const sendEmailVerification = async () => {
+//   try {
+//     const response = await fetch('/api/user/verify-email', {
+//       method: 'POST',
+//       headers: {
+//         'Content-Type': 'application/json',
+//         'Authorization': `Bearer ${localStorage.getItem('token')}`
+//       },
+//       body: JSON.stringify({ email: profile.email })
+//     });
+//     const data = await response.json();
+//     console.log('Email verification sent:', data);
+//   } catch (error) {
+//     console.error('Failed to send email verification:', error);
+//   }
+// };
+
+// 7. Delete Account API
+// const deleteAccount = async () => {
+//   if (window.confirm('Are you sure you want to delete your account? This action cannot be undone.')) {
+//     try {
+//       const response = await fetch('/api/user/account', {
+//         method: 'DELETE',
+//         headers: {
+//           'Authorization': `Bearer ${localStorage.getItem('token')}`
+//         }
+//       });
+//       if (response.ok) {
+//         localStorage.removeItem('token');
+//         window.location.href = '/login';
+//       }
+//     } catch (error) {
+//       console.error('Failed to delete account:', error);
+//     }
+//   }
+// };
+
+// 8. Export User Data API
+// const exportUserData = async () => {
+//   try {
+//     const response = await fetch('/api/user/export', {
+//       headers: {
+//         'Authorization': `Bearer ${localStorage.getItem('token')}`
+//       }
+//     });
+//     const blob = await response.blob();
+//     const url = window.URL.createObjectURL(blob);
+//     const a = document.createElement('a');
+//     a.style.display = 'none';
+//     a.href = url;
+//     a.download = 'user-data.json';
+//     document.body.appendChild(a);
+//     a.click();
+//     window.URL.revokeObjectURL(url);
+//   } catch (error) {
+//     console.error('Failed to export user data:', error);
+//   }
+// };

@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
 
 const Register = () => {
   const [userData, setUserData] = useState({
@@ -39,21 +38,66 @@ const Register = () => {
     try {
       // Your registration API call here
       console.log('Registration attempt:', userData);
-      // Example API call:
-      // const response = await fetch('/api/register', {
+      
+      // Example API call for user registration:
+      // const response = await fetch('/api/auth/register', {
       //   method: 'POST',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify(userData)
+      //   headers: { 
+      //     'Content-Type': 'application/json',
+      //     'Accept': 'application/json'
+      //   },
+      //   body: JSON.stringify({
+      //     name: userData.name,
+      //     email: userData.email,
+      //     phone: userData.phone,
+      //     password: userData.password,
+      //     role: userData.role,
+      //     permissions: userData.permissions
+      //   })
       // });
+      
       // const data = await response.json();
-      // Handle success/error
+      
+      // if (!response.ok) {
+      //   throw new Error(data.message || 'Registration failed');
+      // }
+      
+      // Handle successful registration:
+      // - Store JWT token: localStorage.setItem('token', data.token);
+      // - Redirect user: navigate('/dashboard');
+      // - Show success message: toast.success('Account created successfully!');
+      // - Update global auth state: setUser(data.user);
+      
+      // Handle different response scenarios:
+      // if (data.status === 'pending_verification') {
+      //   // Email verification required
+      //   navigate('/verify-email', { state: { email: userData.email } });
+      // } else if (data.status === 'active') {
+      //   // Account immediately active
+      //   navigate('/dashboard');
+      // }
+      
     } catch (error) {
       console.error('Registration error:', error);
+      
+      // Handle different error types:
+      // if (error.status === 409) {
+      //   // User already exists
+      //   setError('An account with this email already exists');
+      // } else if (error.status === 422) {
+      //   // Validation errors
+      //   setErrors(error.data.errors);
+      // } else if (error.status === 429) {
+      //   // Rate limiting
+      //   setError('Too many registration attempts. Please try again later.');
+      // } else {
+      //   // Generic error
+      //   setError('Registration failed. Please try again.');
+      // }
     }
   };
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
+  const handleSubmit = () => {
     if (userData.password !== userData.confirmPassword) {
       alert('Passwords do not match');
       return;
@@ -62,27 +106,27 @@ const Register = () => {
   };
 
   return (
-    <div className="min-h-screen flex">
+    <div className="min-h-screen flex flex-col lg:flex-row">
       {/* Left Side - Welcome Section */}
-      <div className="flex-1 bg-black flex items-center justify-center p-8">
+      <div className="flex-1 bg-black flex items-center justify-center p-4 sm:p-6 lg:p-8 order-2 lg:order-1">
         <div className="max-w-md w-full text-center">
           {/* Logo */}
-          <div className="mb-8">
-            <div className="w-16 h-16 bg-white rounded-lg mx-auto mb-4 flex items-center justify-center">
-              <img src="/src/assets/vite.svg" alt="Logo" className="w-12 h-12" />
+          <div className="mb-6 lg:mb-8">
+            <div className="w-12 h-12 sm:w-16 sm:h-16 bg-white rounded-lg mx-auto mb-4 flex items-center justify-center">
+              <img src="/src/assets/vite.svg" alt="Logo" className="w-8 h-8 sm:w-12 sm:h-12" />
             </div>
           </div>
 
           {/* Welcome Content */}
           <div className="text-white">
-            <h1 className="text-4xl font-bold mb-4">Join Our Team</h1>
-            <p className="text-lg mb-8 text-gray-300">
+            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold mb-3 lg:mb-4">Join Our Team</h1>
+            <p className="text-base sm:text-lg mb-6 lg:mb-8 text-gray-300">
               Start your retail management journey with us today
             </p>
             
             {/* Team/Collaboration Illustration */}
-            <div className="relative">
-              <div className="w-80 h-60 bg-gray-800 rounded-2xl mx-auto p-6">
+            <div className="relative hidden sm:block">
+              <div className="w-64 sm:w-72 lg:w-80 h-48 sm:h-56 lg:h-60 bg-gray-800 rounded-2xl mx-auto p-4 sm:p-6">
                 <svg width="100%" height="100%" viewBox="0 0 320 200" fill="none" xmlns="http://www.w3.org/2000/svg">
                   {/* Background */}
                   <rect width="320" height="200" rx="12" fill="#1f2937"/>
@@ -126,16 +170,16 @@ const Register = () => {
       </div>
 
       {/* Right Side - Registration Form */}
-      <div className="flex-1 bg-white flex items-center justify-center p-8">
-        <div className="max-w-md w-full">
-          <div className="text-center mb-8">
-            <h2 className="text-3xl font-bold text-black mb-2">Create Account</h2>
-            <p className="text-gray-600">Fill in your details to get started</p>
+      <div className="flex-1 bg-white flex items-center justify-center p-4 sm:p-6 lg:p-8 order-1 lg:order-2">
+        <div className="w-full max-w-md">
+          <div className="text-center mb-6 lg:mb-8">
+            <h2 className="text-2xl sm:text-3xl font-bold text-black mb-2">Create Account</h2>
+            <p className="text-sm sm:text-base text-gray-600">Fill in your details to get started</p>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <div onSubmit={handleSubmit} className="space-y-3 sm:space-y-4">
             <div>
-              <label htmlFor="name" className="block text-sm font-medium text-black mb-2">
+              <label htmlFor="name" className="block text-sm font-medium text-black mb-1 sm:mb-2">
                 Full Name
               </label>
               <input
@@ -145,13 +189,13 @@ const Register = () => {
                 value={userData.name}
                 onChange={handleInputChange}
                 required
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent outline-none transition-all"
+                className="w-full px-3 sm:px-4 py-2.5 sm:py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent outline-none transition-all text-sm sm:text-base"
                 placeholder="Enter your full name"
               />
             </div>
 
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-black mb-2">
+              <label htmlFor="email" className="block text-sm font-medium text-black mb-1 sm:mb-2">
                 Email Address
               </label>
               <input
@@ -161,13 +205,13 @@ const Register = () => {
                 value={userData.email}
                 onChange={handleInputChange}
                 required
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent outline-none transition-all"
+                className="w-full px-3 sm:px-4 py-2.5 sm:py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent outline-none transition-all text-sm sm:text-base"
                 placeholder="Enter your email"
               />
             </div>
 
             <div>
-              <label htmlFor="phone" className="block text-sm font-medium text-black mb-2">
+              <label htmlFor="phone" className="block text-sm font-medium text-black mb-1 sm:mb-2">
                 Phone Number
               </label>
               <input
@@ -177,14 +221,13 @@ const Register = () => {
                 value={userData.phone}
                 onChange={handleInputChange}
                 required
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent outline-none transition-all"
+                className="w-full px-3 sm:px-4 py-2.5 sm:py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent outline-none transition-all text-sm sm:text-base"
                 placeholder="+233123456789"
               />
             </div>
 
-
             <div>
-              <label htmlFor="password" className="block text-sm font-medium text-black mb-2">
+              <label htmlFor="password" className="block text-sm font-medium text-black mb-1 sm:mb-2">
                 Password
               </label>
               <input
@@ -194,13 +237,13 @@ const Register = () => {
                 value={userData.password}
                 onChange={handleInputChange}
                 required
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent outline-none transition-all"
+                className="w-full px-3 sm:px-4 py-2.5 sm:py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent outline-none transition-all text-sm sm:text-base"
                 placeholder="Create a password"
               />
             </div>
 
             <div>
-              <label htmlFor="confirmPassword" className="block text-sm font-medium text-black mb-2">
+              <label htmlFor="confirmPassword" className="block text-sm font-medium text-black mb-1 sm:mb-2">
                 Confirm Password
               </label>
               <input
@@ -210,31 +253,31 @@ const Register = () => {
                 value={userData.confirmPassword}
                 onChange={handleInputChange}
                 required
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent outline-none transition-all"
+                className="w-full px-3 sm:px-4 py-2.5 sm:py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent outline-none transition-all text-sm sm:text-base"
                 placeholder="Confirm your password"
               />
             </div>
 
-
             <button
-              type="submit"
-              className="w-full bg-black text-white py-3 px-4 rounded-lg hover:bg-gray-800 transition-colors font-medium"
+              type="button"
+              onClick={handleSubmit}
+              className="w-full bg-black text-white py-2.5 sm:py-3 px-4 rounded-lg hover:bg-gray-800 transition-colors font-medium text-sm sm:text-base mt-4 sm:mt-6"
             >
               Create Account
             </button>
-          </form>
+          </div>
 
-          <div className="mt-6 text-center">
-            <p className="text-gray-600">
+          <div className="mt-4 sm:mt-6 text-center">
+            <p className="text-sm sm:text-base text-gray-600">
               Already have an account?{' '}
-              <Link to="/login" className="text-black font-medium hover:underline">
-                Log In
-              </Link>
+                <a href="/login" className="text-black font-medium hover:underline">
+               Login
+              </a>
             </p>
           </div>
 
           {/* Partnership/Footer */}
-          <div className="mt-8 text-center">
+          <div className="mt-6 sm:mt-8 text-center">
             <p className="text-xs text-gray-500 italic flex items-center justify-center">
               Powered by
               <svg className="ml-2 h-4 w-4" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">

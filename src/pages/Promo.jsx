@@ -15,7 +15,7 @@ const DiscountPromotionsSystem = () => {
   const [filterStatus, setFilterStatus] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
 
-  // Mock data
+  // Mock data - In production, these would come from API calls
   const [campaigns, setCampaigns] = useState([
     {
       id: 'camp_001',
@@ -99,7 +99,57 @@ const DiscountPromotionsSystem = () => {
     usageLimit: ''
   });
 
-  const handleCreateCampaign = () => {
+  // API Call Functions (commented for reference)
+  
+  // Load campaigns from API
+  // const loadCampaigns = async () => {
+  //   try {
+  //     const response = await fetch('/api/campaigns');
+  //     const data = await response.json();
+  //     setCampaigns(data);
+  //   } catch (error) {
+  //     console.error('Error loading campaigns:', error);
+  //   }
+  // };
+
+  // Load pending approvals from API
+  // const loadPendingApprovals = async () => {
+  //   try {
+  //     const response = await fetch('/api/approvals/pending');
+  //     const data = await response.json();
+  //     setPendingApprovals(data);
+  //   } catch (error) {
+  //     console.error('Error loading pending approvals:', error);
+  //   }
+  // };
+
+  // Load generated codes from API
+  // const loadGeneratedCodes = async () => {
+  //   try {
+  //     const response = await fetch('/api/promo-codes');
+  //     const data = await response.json();
+  //     setGeneratedCodes(data);
+  //   } catch (error) {
+  //     console.error('Error loading generated codes:', error);
+  //   }
+  // };
+
+  const handleCreateCampaign = async () => {
+    // API Call: Create new campaign
+    // try {
+    //   const response = await fetch('/api/campaigns', {
+    //     method: 'POST',
+    //     headers: {
+    //       'Content-Type': 'application/json',
+    //     },
+    //     body: JSON.stringify(newCampaign)
+    //   });
+    //   const createdCampaign = await response.json();
+    //   setCampaigns([...campaigns, createdCampaign]);
+    // } catch (error) {
+    //   console.error('Error creating campaign:', error);
+    // }
+
     const campaignData = {
       id: `camp_${Date.now()}`,
       ...newCampaign,
@@ -120,7 +170,26 @@ const DiscountPromotionsSystem = () => {
     setShowCreateModal(false);
   };
 
-  const handleEditCampaign = () => {
+  const handleEditCampaign = async () => {
+    // API Call: Update campaign
+    // try {
+    //   const response = await fetch(`/api/campaigns/${editCampaign.id}`, {
+    //     method: 'PUT',
+    //     headers: {
+    //       'Content-Type': 'application/json',
+    //     },
+    //     body: JSON.stringify(editCampaign)
+    //   });
+    //   const updatedCampaign = await response.json();
+    //   setCampaigns(prev => 
+    //     prev.map(campaign => 
+    //       campaign.id === editCampaign.id ? updatedCampaign : campaign
+    //     )
+    //   );
+    // } catch (error) {
+    //   console.error('Error updating campaign:', error);
+    // }
+
     setCampaigns(prev => 
       prev.map(campaign => 
         campaign.id === editCampaign.id 
@@ -132,7 +201,19 @@ const DiscountPromotionsSystem = () => {
     setSelectedCampaign(null);
   };
 
-  const handleDeleteCampaign = () => {
+  const handleDeleteCampaign = async () => {
+    // API Call: Delete campaign
+    // try {
+    //   const response = await fetch(`/api/campaigns/${selectedCampaign.id}`, {
+    //     method: 'DELETE'
+    //   });
+    //   if (response.ok) {
+    //     setCampaigns(prev => prev.filter(campaign => campaign.id !== selectedCampaign.id));
+    //   }
+    // } catch (error) {
+    //   console.error('Error deleting campaign:', error);
+    // }
+
     setCampaigns(prev => prev.filter(campaign => campaign.id !== selectedCampaign.id));
     setShowDeleteModal(false);
     setSelectedCampaign(null);
@@ -167,7 +248,28 @@ const DiscountPromotionsSystem = () => {
     return result;
   };
 
-  const handleApproveRequest = (requestId, approved) => {
+  const handleApproveRequest = async (requestId, approved) => {
+    // API Call: Approve/Reject request
+    // try {
+    //   const response = await fetch(`/api/approvals/${requestId}`, {
+    //     method: 'PUT',
+    //     headers: {
+    //       'Content-Type': 'application/json',
+    //     },
+    //     body: JSON.stringify({ 
+    //       status: approved ? 'approved' : 'rejected' 
+    //     })
+    //   });
+    //   const updatedRequest = await response.json();
+    //   setPendingApprovals(prev => 
+    //     prev.map(req => 
+    //       req.id === requestId ? updatedRequest : req
+    //     )
+    //   );
+    // } catch (error) {
+    //   console.error('Error updating approval status:', error);
+    // }
+
     setPendingApprovals(prev => 
       prev.map(req => 
         req.id === requestId 
@@ -177,7 +279,18 @@ const DiscountPromotionsSystem = () => {
     );
   };
 
-  const generateNewCode = (campaignId) => {
+  const generateNewCode = async (campaignId) => {
+    // API Call: Generate new promo code
+    // try {
+    //   const response = await fetch(`/api/campaigns/${campaignId}/generate-code`, {
+    //     method: 'POST'
+    //   });
+    //   const newCodeData = await response.json();
+    //   setGeneratedCodes(prev => [...prev, newCodeData]);
+    // } catch (error) {
+    //   console.error('Error generating new code:', error);
+    // }
+
     const newCode = generatePromoCode();
     setGeneratedCodes(prev => [
       ...prev,
@@ -191,6 +304,16 @@ const DiscountPromotionsSystem = () => {
   };
 
   const validateCode = (code) => {
+    // API Call: Validate promo code
+    // try {
+    //   const response = await fetch(`/api/promo-codes/validate/${code}`);
+    //   const validationResult = await response.json();
+    //   return validationResult.isValid;
+    // } catch (error) {
+    //   console.error('Error validating code:', error);
+    //   return false;
+    // }
+
     return generatedCodes.find(c => c.code === code && !c.used);
   };
 
@@ -202,13 +325,13 @@ const DiscountPromotionsSystem = () => {
   });
 
   const CampaignCard = ({ campaign }) => (
-    <div className="bg-white border border-gray-200 rounded-lg p-6 hover:shadow-md transition-shadow">
-      <div className="flex justify-between items-start mb-4">
-        <div>
-          <h3 className="text-lg font-semibold text-black mb-1">{campaign.name}</h3>
-          <p className="text-sm text-gray-600">Code: {campaign.code}</p>
+    <div className="bg-white border border-gray-200 rounded-lg p-4 sm:p-6 hover:shadow-md transition-shadow">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start mb-4 space-y-2 sm:space-y-0">
+        <div className="flex-1 min-w-0">
+          <h3 className="text-lg font-semibold text-black mb-1 truncate">{campaign.name}</h3>
+          <p className="text-sm text-gray-600 break-all sm:break-normal">Code: {campaign.code}</p>
         </div>
-        <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+        <span className={`inline-flex px-3 py-1 rounded-full text-xs font-medium self-start ${
           campaign.status === 'active' 
             ? 'bg-green-100 text-green-800' 
             : 'bg-gray-100 text-gray-800'
@@ -217,41 +340,41 @@ const DiscountPromotionsSystem = () => {
         </span>
       </div>
 
-      <div className="grid grid-cols-2 gap-4 mb-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 mb-4">
         <div className="flex items-center space-x-2">
-          <Percent className="h-4 w-4 text-gray-400" />
-          <span className="text-sm text-gray-600">
+          <Percent className="h-4 w-4 text-gray-400 flex-shrink-0" />
+          <span className="text-sm text-gray-600 truncate">
             {campaign.type === 'percentage' ? `${campaign.value}%` : `$${campaign.value}`} off
           </span>
         </div>
         <div className="flex items-center space-x-2">
-          <Users className="h-4 w-4 text-gray-400" />
-          <span className="text-sm text-gray-600">
+          <Users className="h-4 w-4 text-gray-400 flex-shrink-0" />
+          <span className="text-sm text-gray-600 truncate">
             {campaign.usedCount}/{campaign.usageLimit} used
           </span>
         </div>
-        <div className="flex items-center space-x-2">
-          <Calendar className="h-4 w-4 text-gray-400" />
-          <span className="text-sm text-gray-600">
+        <div className="flex items-center space-x-2 sm:col-span-1">
+          <Calendar className="h-4 w-4 text-gray-400 flex-shrink-0" />
+          <span className="text-sm text-gray-600 truncate">
             {campaign.startDate} - {campaign.endDate}
           </span>
         </div>
         <div className="flex items-center space-x-2">
-          <DollarSign className="h-4 w-4 text-gray-400" />
-          <span className="text-sm text-gray-600">
+          <DollarSign className="h-4 w-4 text-gray-400 flex-shrink-0" />
+          <span className="text-sm text-gray-600 truncate">
             Min: ${campaign.minimumPurchase}
           </span>
         </div>
       </div>
 
-      <div className="flex justify-between items-center">
-        <div className="w-full bg-gray-200 rounded-full h-2 mr-4">
+      <div className="flex items-center space-x-3">
+        <div className="flex-1 bg-gray-200 rounded-full h-2">
           <div 
-            className="bg-black h-2 rounded-full" 
+            className="bg-black h-2 rounded-full transition-all duration-300" 
             style={{ width: `${(campaign.usedCount / campaign.usageLimit) * 100}%` }}
           ></div>
         </div>
-        <div className="flex space-x-2">
+        <div className="flex space-x-1 sm:space-x-2">
           <button 
             onClick={() => generateNewCode(campaign.id)}
             className="p-2 text-gray-600 hover:text-black hover:bg-gray-100 rounded transition-colors"
@@ -279,27 +402,27 @@ const DiscountPromotionsSystem = () => {
   );
 
   const ApprovalCard = ({ request }) => (
-    <div className="bg-white border border-gray-200 rounded-lg p-6">
-      <div className="flex justify-between items-start mb-4">
-        <div>
-          <h3 className="text-lg font-semibold text-black mb-1">{request.userName}</h3>
-          <p className="text-sm text-gray-600">{request.email}</p>
+    <div className="bg-white border border-gray-200 rounded-lg p-4 sm:p-6">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start mb-4 space-y-2 sm:space-y-0">
+        <div className="flex-1 min-w-0">
+          <h3 className="text-lg font-semibold text-black mb-1 truncate">{request.userName}</h3>
+          <p className="text-sm text-gray-600 break-all sm:break-normal">{request.email}</p>
         </div>
-        <span className="px-3 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+        <span className="inline-flex px-3 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 self-start">
           Pending
         </span>
       </div>
 
       <div className="space-y-3 mb-4">
-        <div className="flex justify-between">
+        <div className="flex flex-col sm:flex-row sm:justify-between space-y-1 sm:space-y-0">
           <span className="text-sm text-gray-600">Campaign:</span>
-          <span className="text-sm font-medium text-black">{request.campaignName}</span>
+          <span className="text-sm font-medium text-black truncate sm:text-right">{request.campaignName}</span>
         </div>
-        <div className="flex justify-between">
+        <div className="flex flex-col sm:flex-row sm:justify-between space-y-1 sm:space-y-0">
           <span className="text-sm text-gray-600">Points Requested:</span>
           <span className="text-sm font-medium text-black">{request.pointsRequested}</span>
         </div>
-        <div className="flex justify-between">
+        <div className="flex flex-col sm:flex-row sm:justify-between space-y-1 sm:space-y-0">
           <span className="text-sm text-gray-600">Request Date:</span>
           <span className="text-sm font-medium text-black">{request.requestDate}</span>
         </div>
@@ -311,7 +434,7 @@ const DiscountPromotionsSystem = () => {
         </p>
       </div>
 
-      <div className="flex space-x-3">
+      <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3">
         <button
           onClick={() => handleApproveRequest(request.id, true)}
           className="flex-1 bg-green-600 text-white py-2 px-4 rounded-lg hover:bg-green-700 transition-colors flex items-center justify-center space-x-2"
@@ -332,54 +455,66 @@ const DiscountPromotionsSystem = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 flex">
-        {/* Sidebar - Fixed positioning with proper z-index */}
-      <div className={`fixed left-0 top-0 h-full z-40 transition-all duration-300 ${sidebarOpen ? 'w-64' : 'w-20'}`}>
+      {/* Sidebar - Responsive positioning */}
+      <div className={`fixed left-0 top-0 h-full z-40 transition-all duration-300 ${
+        sidebarOpen ? 'w-64' : 'w-20'
+      } ${sidebarOpen ? 'block' : 'hidden lg:block'}`}>
         <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
       </div>
       
-      {/* Main content area - Adjusted for sidebar */}
-      <div className={`flex-1 transition-all duration-300 ${sidebarOpen ? 'ml-64' : 'ml-20'}`}>
-        {/* Navbar - Fixed at top with proper z-index */}
-        <div className="fixed top-0 right-0 z-30 transition-all duration-300" style={{ left: sidebarOpen ? '256px' : '80px' }}>
+      {/* Overlay for mobile when sidebar is open */}
+      {sidebarOpen && (
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-50 z-30 lg:hidden"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+      
+      {/* Main content area - Responsive margins */}
+      <div className={`flex-1 transition-all duration-300 ${
+        sidebarOpen ? 'lg:ml-64' : 'lg:ml-20'
+      }`}>
+        {/* Navbar - Responsive positioning */}
+        <div className={`fixed top-0 right-0 z-30 transition-all duration-300 ${
+          sidebarOpen ? 'lg:left-64' : 'lg:left-20'
+        } left-0`}>
           <Navbar 
             onMenuClick={() => setSidebarOpen(!sidebarOpen)} 
-            title={ 'Promotion and Discount'}
+            title={'Promotion and Discount'}
           />
         </div>
-        
-       
 
-        {/* Content */}
-        <main className="flex-1 overflow-y-auto p-11">
-          {/* Header */}
-          <div className="bg-black text-white p-6">
+        {/* Content with responsive padding */}
+        <main className="flex-1 overflow-y-auto pt-16 pb-20 lg:pb-6">
+          {/* Header - Responsive design */}
+          <div className="bg-black text-white p-4 sm:p-6">
             <div className="max-w-6xl mx-auto">
-              <div className="flex items-center justify-between">
+              <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-4 lg:space-y-0">
                 <div>
-                  <h1 className="text-3xl font-bold mb-2">Discounts & Promotions</h1>
-                  <p className="text-gray-300">Manage campaigns, approve requests, and generate promo codes</p>
+                  <h1 className="text-2xl sm:text-3xl font-bold mb-2">Discounts & Promotions</h1>
+                  <p className="text-gray-300 text-sm sm:text-base">Manage campaigns, approve requests, and generate promo codes</p>
                 </div>
-                <div className="flex items-center space-x-4">
-                  <div className="text-right">
-                    <p className="text-2xl font-bold">{campaigns.length}</p>
-                    <p className="text-sm text-gray-300">Active Campaigns</p>
+                <div className="flex justify-between lg:justify-end lg:space-x-8 space-x-4">
+                  <div className="text-center lg:text-right">
+                    <p className="text-xl sm:text-2xl font-bold">{campaigns.length}</p>
+                    <p className="text-xs sm:text-sm text-gray-300">Active Campaigns</p>
                   </div>
-                  <div className="text-right">
-                    <p className="text-2xl font-bold">{pendingApprovals.filter(req => req.status === 'pending').length}</p>
-                    <p className="text-sm text-gray-300">Pending Approvals</p>
+                  <div className="text-center lg:text-right">
+                    <p className="text-xl sm:text-2xl font-bold">{pendingApprovals.filter(req => req.status === 'pending').length}</p>
+                    <p className="text-xs sm:text-sm text-gray-300">Pending Approvals</p>
                   </div>
                 </div>
               </div>
             </div>
           </div>
 
-          {/* Navigation Tabs */}
-          <div className="bg-white border-b border-gray-200">
+          {/* Navigation Tabs - Responsive scroll */}
+          <div className="bg-white border-b border-gray-200 sticky top-16 z-20">
             <div className="max-w-6xl mx-auto">
-              <nav className="flex space-x-8">
+              <nav className="flex space-x-4 sm:space-x-8 overflow-x-auto px-4 sm:px-0">
                 <button
                   onClick={() => setActiveTab('campaigns')}
-                  className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
+                  className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors whitespace-nowrap ${
                     activeTab === 'campaigns'
                       ? 'border-black text-black'
                       : 'border-transparent text-gray-500 hover:text-gray-700'
@@ -389,7 +524,7 @@ const DiscountPromotionsSystem = () => {
                 </button>
                 <button
                   onClick={() => setActiveTab('approvals')}
-                  className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors relative ${
+                  className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors relative whitespace-nowrap ${
                     activeTab === 'approvals'
                       ? 'border-black text-black'
                       : 'border-transparent text-gray-500 hover:text-gray-700'
@@ -404,7 +539,7 @@ const DiscountPromotionsSystem = () => {
                 </button>
                 <button
                   onClick={() => setActiveTab('codes')}
-                  className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
+                  className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors whitespace-nowrap ${
                     activeTab === 'codes'
                       ? 'border-black text-black'
                       : 'border-transparent text-gray-500 hover:text-gray-700'
@@ -416,12 +551,12 @@ const DiscountPromotionsSystem = () => {
             </div>
           </div>
 
-          <div className="max-w-6xl mx-auto p-6">
+          <div className="max-w-6xl mx-auto p-4 sm:p-6">
             {activeTab === 'campaigns' && (
               <div>
-                {/* Controls */}
-                <div className="flex justify-between items-center mb-6">
-                  <div className="flex space-x-4">
+                {/* Controls - Responsive layout */}
+                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-6 space-y-4 sm:space-y-0">
+                  <div className="flex flex-col sm:flex-row space-y-3 sm:space-y-0 sm:space-x-4">
                     <div className="relative">
                       <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
                       <input
@@ -429,13 +564,13 @@ const DiscountPromotionsSystem = () => {
                         placeholder="Search campaigns..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
-                        className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent outline-none"
+                        className="w-full sm:w-auto pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent outline-none"
                       />
                     </div>
                     <select
                       value={filterStatus}
                       onChange={(e) => setFilterStatus(e.target.value)}
-                      className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent outline-none"
+                      className="w-full sm:w-auto px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent outline-none"
                     >
                       <option value="all">All Status</option>
                       <option value="active">Active</option>
@@ -444,15 +579,15 @@ const DiscountPromotionsSystem = () => {
                   </div>
                   <button
                     onClick={() => setShowCreateModal(true)}
-                    className="bg-black text-white px-4 py-2 rounded-lg hover:bg-gray-800 transition-colors flex items-center space-x-2"
+                    className="w-full sm:w-auto bg-black text-white px-4 py-2 rounded-lg hover:bg-gray-800 transition-colors flex items-center justify-center space-x-2"
                   >
                     <Plus className="h-4 w-4" />
                     <span>New Campaign</span>
                   </button>
                 </div>
 
-                {/* Campaigns Grid */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {/* Campaigns Grid - Responsive columns */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6">
                   {filteredCampaigns.map(campaign => (
                     <CampaignCard key={campaign.id} campaign={campaign} />
                   ))}
@@ -467,7 +602,7 @@ const DiscountPromotionsSystem = () => {
                   <p className="text-gray-600">Review and approve customer point redemption requests</p>
                 </div>
                 
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
                   {pendingApprovals
                     .filter(req => req.status === 'pending')
                     .map(request => (
@@ -492,55 +627,63 @@ const DiscountPromotionsSystem = () => {
                   <p className="text-gray-600">View and manage all generated promotional codes</p>
                 </div>
 
+                {/* Responsive table wrapper */}
                 <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-                  <table className="w-full">
-                    <thead className="bg-gray-50">
-                      <tr>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Code</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Campaign</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Generated</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody className="bg-white divide-y divide-gray-200">
-                      {generatedCodes.map((code, index) => (
-                        <tr key={index}>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <span className="font-mono text-sm font-semibold text-black">{code.code}</span>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                            {campaigns.find(c => c.id === code.campaignId)?.name || 'Unknown'}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                            {code.generated}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                              code.used 
-                                ? 'bg-gray-100 text-gray-800' 
-                                : 'bg-green-100 text-green-800'
-                            }`}>
-                              {code.used ? 'Used' : 'Active'}
-                            </span>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                            <button className="text-black hover:text-gray-700">Copy</button>
-                          </td>
+                  <div className="overflow-x-auto">
+                    <table className="w-full min-w-full">
+                      <thead className="bg-gray-50">
+                        <tr>
+                          <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Code</th>
+                          <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden sm:table-cell">Campaign</th>
+                          <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden md:table-cell">Generated</th>
+                          <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                          <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                      </thead>
+                      <tbody className="bg-white divide-y divide-gray-200">
+                        {generatedCodes.map((code, index) => (
+                          <tr key={index}>
+                            <td className="px-3 sm:px-6 py-4 whitespace-nowrap">
+                              <div className="flex flex-col">
+                                <span className="font-mono text-sm font-semibold text-black">{code.code}</span>
+                                <span className="text-xs text-gray-500 sm:hidden">
+                                  {campaigns.find(c => c.id === code.campaignId)?.name || 'Unknown'}
+                                </span>
+                              </div>
+                            </td>
+                            <td className="px-3 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-600 hidden sm:table-cell">
+                              {campaigns.find(c => c.id === code.campaignId)?.name || 'Unknown'}
+                            </td>
+                            <td className="px-3 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-600 hidden md:table-cell">
+                              {code.generated}
+                            </td>
+                            <td className="px-3 sm:px-6 py-4 whitespace-nowrap">
+                              <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                code.used 
+                                  ? 'bg-gray-100 text-gray-800' 
+                                  : 'bg-green-100 text-green-800'
+                              }`}>
+                                {code.used ? 'Used' : 'Active'}
+                              </span>
+                            </td>
+                            <td className="px-3 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                              <button className="text-black hover:text-gray-700">Copy</button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
               </div>
             )}
           </div>
 
-          {/* Create Campaign Modal */}
+          {/* Create Campaign Modal - Responsive */}
           {showCreateModal && (
             <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-              <div className="bg-white rounded-lg max-w-md w-full max-h-90vh overflow-y-auto">
-                <div className="p-6">
+              <div className="bg-white rounded-lg w-full max-w-md max-h-[90vh] overflow-y-auto">
+                <div className="p-4 sm:p-6">
                   <h2 className="text-xl font-semibold text-black mb-4">Create New Campaign</h2>
                   
                   <div className="space-y-4">
@@ -580,7 +723,7 @@ const DiscountPromotionsSystem = () => {
                       />
                     </div>
 
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       <div>
                         <label className="block text-sm font-medium text-black mb-2">Start Date</label>
                         <input
@@ -624,7 +767,7 @@ const DiscountPromotionsSystem = () => {
                     </div>
                   </div>
 
-                  <div className="flex space-x-3 mt-6">
+                  <div className="flex flex-col sm:flex-row space-y-3 sm:space-y-0 sm:space-x-3 mt-6">
                     <button
                       onClick={() => setShowCreateModal(false)}
                       className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
@@ -643,11 +786,11 @@ const DiscountPromotionsSystem = () => {
             </div>
           )}
 
-          {/* Edit Campaign Modal */}
+          {/* Edit Campaign Modal - Responsive */}
           {showEditModal && (
             <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-              <div className="bg-white rounded-lg max-w-md w-full max-h-90vh overflow-y-auto">
-                <div className="p-6">
+              <div className="bg-white rounded-lg w-full max-w-md max-h-[90vh] overflow-y-auto">
+                <div className="p-4 sm:p-6">
                   <h2 className="text-xl font-semibold text-black mb-4">Edit Campaign</h2>
                   
                   <div className="space-y-4">
@@ -687,7 +830,7 @@ const DiscountPromotionsSystem = () => {
                       />
                     </div>
 
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       <div>
                         <label className="block text-sm font-medium text-black mb-2">Start Date</label>
                         <input
@@ -731,7 +874,7 @@ const DiscountPromotionsSystem = () => {
                     </div>
                   </div>
 
-                  <div className="flex space-x-3 mt-6">
+                  <div className="flex flex-col sm:flex-row space-y-3 sm:space-y-0 sm:space-x-3 mt-6">
                     <button
                       onClick={() => {
                         setShowEditModal(false);
@@ -753,11 +896,11 @@ const DiscountPromotionsSystem = () => {
             </div>
           )}
 
-          {/* Delete Campaign Modal */}
+          {/* Delete Campaign Modal - Responsive */}
           {showDeleteModal && selectedCampaign && (
             <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-              <div className="bg-white rounded-lg max-w-md w-full">
-                <div className="p-6">
+              <div className="bg-white rounded-lg w-full max-w-md">
+                <div className="p-4 sm:p-6">
                   <div className="flex items-center justify-center w-12 h-12 bg-red-100 rounded-full mx-auto mb-4">
                     <Trash2 className="h-6 w-6 text-red-600" />
                   </div>
@@ -771,11 +914,11 @@ const DiscountPromotionsSystem = () => {
                     <div className="space-y-2 text-sm">
                       <div className="flex justify-between">
                         <span className="text-gray-600">Campaign:</span>
-                        <span className="font-medium text-black">{selectedCampaign.name}</span>
+                        <span className="font-medium text-black truncate ml-2">{selectedCampaign.name}</span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-gray-600">Code:</span>
-                        <span className="font-mono font-medium text-black">{selectedCampaign.code}</span>
+                        <span className="font-mono font-medium text-black break-all ml-2">{selectedCampaign.code}</span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-gray-600">Usage:</span>
@@ -784,7 +927,7 @@ const DiscountPromotionsSystem = () => {
                     </div>
                   </div>
 
-                  <div className="flex space-x-3">
+                  <div className="flex flex-col sm:flex-row space-y-3 sm:space-y-0 sm:space-x-3">
                     <button
                       onClick={() => {
                         setShowDeleteModal(false);
@@ -808,39 +951,37 @@ const DiscountPromotionsSystem = () => {
         </main>
       </div>
 
- {/* Chatbot */}
-        <ChatBot 
-          isVisible={showChatBot} 
-          onClose={() => setShowChatBot(false)}
-          dashboardData={{
-            todayStats: {
-              transactions: 42,
-              revenue: 2850.75,
-              averageOrderValue: 67.88
-            },
-            inventory: {
-              lowStockCount: 8,
-              lowStockProducts: [
-                { name: "Premium Headphones" },
-                { name: "Wireless Charger" }
-              ]
-            },
-            customers: {
-              totalCustomers: 1245
-            }
-          }}
-        />
+      {/* Chatbot - Responsive positioning */}
+      <ChatBot 
+        isVisible={showChatBot} 
+        onClose={() => setShowChatBot(false)}
+        dashboardData={{
+          todayStats: {
+            transactions: 42,
+            revenue: 2850.75,
+            averageOrderValue: 67.88
+          },
+          inventory: {
+            lowStockCount: 8,
+            lowStockProducts: [
+              { name: "Premium Headphones" },
+              { name: "Wireless Charger" }
+            ]
+          },
+          customers: {
+            totalCustomers: 1245
+          }
+        }}
+      />
 
-           {/* Chatbot toggle button */}
+      {/* Chatbot toggle button - Responsive positioning */}
       <button 
-        onClick={() =>  setShowChatBot(true)}
-        className="fixed bottom-6 right-6 w-14 h-14 bg-black rounded-full flex items-center justify-center shadow-lg hover:bg-gray-800 transition-colors z-30"
+        onClick={() => setShowChatBot(true)}
+        className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 w-12 h-12 sm:w-14 sm:h-14 bg-black rounded-full flex items-center justify-center shadow-lg hover:bg-gray-800 transition-colors z-30"
       >
-        <Bot className="text-white w-6 h-6" />
+        <Bot className="text-white w-5 h-5 sm:w-6 sm:h-6" />
       </button>
 
     </div>
   );
-};
-
-export default DiscountPromotionsSystem;
+};export default DiscountPromotionsSystem;
