@@ -1,11 +1,18 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
 
 const Login = () => {
   const [credentials, setCredentials] = useState({
     email: '',
     password: ''
   });
+
+  const [showDemo, setShowDemo] = useState(false);
+
+  // Demo credentials
+  const demoCredentials = {
+    email: 'demo@retailapp.com',
+    password: 'demo123'
+  };
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -15,9 +22,20 @@ const Login = () => {
     }));
   };
 
+  const fillDemoCredentials = () => {
+    setCredentials(demoCredentials);
+  };
+
   const loginUser = async (credentials) => {
     try {
-      // Your login API call here
+      // Check if using demo credentials
+      if (credentials.email === demoCredentials.email && credentials.password === demoCredentials.password) {
+        console.log('Demo login successful!');
+        // Handle demo login success
+        return;
+      }
+
+      // Your regular login API call here
       console.log('Login attempt:', credentials);
       // Example API call:
       // const response = await fetch('/api/login', {
@@ -107,7 +125,40 @@ const Login = () => {
             <p className="text-gray-600">Enter your credentials to access your account</p>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-6">
+          {/* Demo Credentials Info */}
+          <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-sm font-medium text-blue-800">Try Demo Account</h3>
+                <p className="text-xs text-blue-600 mt-1">Use demo credentials for testing</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowDemo(!showDemo)}
+                className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+              >
+                {showDemo ? 'Hide' : 'Show'}
+              </button>
+            </div>
+            
+            {showDemo && (
+              <div className="mt-3 pt-3 border-t border-blue-200">
+                <div className="text-xs text-blue-700 space-y-1">
+                  <p><strong>Email:</strong> demo@retailapp.com</p>
+                  <p><strong>Password:</strong> demo123</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={fillDemoCredentials}
+                  className="mt-2 px-3 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700 transition-colors"
+                >
+                  Fill Demo Credentials
+                </button>
+              </div>
+            )}
+          </div>
+
+          <div onSubmit={handleSubmit} className="space-y-6">
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-black mb-2">
                 Email Address
@@ -155,18 +206,19 @@ const Login = () => {
 
             <button
               type="submit"
+              onClick={handleSubmit}
               className="w-full bg-black text-white py-3 px-4 rounded-lg hover:bg-gray-800 transition-colors font-medium"
             >
               Log In
             </button>
-          </form>
+          </div>
 
           <div className="mt-6 text-center">
             <p className="text-gray-600">
               Don't have an account?{' '}
-              <Link to="/register" className="text-black font-medium hover:underline">
+              <a href="#" className="text-black font-medium hover:underline">
                 Create Account
-              </Link>
+              </a>
             </p>
           </div>
 
