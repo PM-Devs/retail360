@@ -64,7 +64,7 @@ const Login = () => {
           {/* Logo */}
           <div className="mb-8">
             <div className="w-16 h-16 bg-white rounded-lg mx-auto mb-4 flex items-center justify-center">
-                 <img src="./src/assets/vite.svg" alt="Logo" className="w-12 h-12" />
+                 <img src="../src/assets/vite.svg" alt="Logo" className="w-12 h-12" />
             </div>
           </div>
 
