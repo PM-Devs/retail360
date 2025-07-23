@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-
+import { useNavigate } from 'react-router-dom';
 const Login = () => {
   const [credentials, setCredentials] = useState({
     email: '',
@@ -7,7 +7,7 @@ const Login = () => {
   });
 
   const [showDemo, setShowDemo] = useState(false);
-
+  const navigate = useNavigate();
   // Demo credentials
   const demoCredentials = {
     email: 'demo@retailapp.com',
@@ -31,6 +31,7 @@ const Login = () => {
       // Check if using demo credentials
       if (credentials.email === demoCredentials.email && credentials.password === demoCredentials.password) {
         console.log('Demo login successful!');
+        navigate('/dashboard'); // Redirect to dashboard on demo login
         // Handle demo login success
         return;
       }
