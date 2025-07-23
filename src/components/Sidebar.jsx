@@ -26,7 +26,7 @@ const Sidebar = ({ isOpen, onClose }) => {
         <div className="flex flex-col flex-1">
           <div className="flex items-center justify-between px-4 py-3 border-b border-gray-700">
             <Link to="/" className="flex items-center">
-              <img src="../src/assets/vite.svg" alt="Logo" className="w-10 h-10 bg-white rounded-lg p-1" />
+              <img src="/vite.svg" alt="Logo" className="w-10 h-10 bg-white rounded-lg p-1" />
               <span className={`ml-2 text-xl font-bold text-white transition-opacity duration-300 ${isOpen ? 'opacity-100' : 'opacity-0 hidden'}`}>Retail360</span>
             </Link>
             <button onClick={onClose} className={`p-2 hover:bg-gray-800 rounded-lg transition-opacity duration-300 ${isOpen ? 'opacity-100' : 'opacity-0 hidden'}`}>
