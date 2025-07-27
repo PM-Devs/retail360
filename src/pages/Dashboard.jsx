@@ -201,9 +201,9 @@ const Dashboard = () => {
   };
 
   const quickActions = [
-    { icon: Plus, label: 'New Sale', color: 'bg-blue-500', path: '/sales' },
-    { icon: Package, label: 'Add Product', color: 'bg-green-500', path: '/products' },
-    { icon: Users, label: 'Add Customer', color: 'bg-purple-500', path: '/customers' },
+    { icon: Plus, label: 'New Sale', color: 'bg-yellow-500', path: '/sales' },
+    { icon: Package, label: 'Add Product', color: 'bg-red-500', path: '/products' },
+    { icon: Users, label: 'Add Customer', color: 'bg-gray-500', path: '/customers' },
     { icon: BarChart3, label: 'View Reports', color: 'bg-orange-500', path: '/reports' }
   ];
 
