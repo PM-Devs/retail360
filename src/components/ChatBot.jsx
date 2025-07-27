@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Bot, X, Send, Sparkles } from 'lucide-react';
+import { Bot, X, Send, Sparkles, AlertCircle } from 'lucide-react';
 
 const TypewriterText = ({ text, speed = 5, onComplete }) => {
   const [displayText, setDisplayText] = useState('');
@@ -34,12 +34,45 @@ const TypewriterText = ({ text, speed = 5, onComplete }) => {
   );
 };
 
+// Axios service for AFIA AI API
+const afiaApiService = {
+  async sendMessage(question, systemPrompt = null) {
+    try {
+      const response = await fetch('https://retail360-backend.vercel.app/api/afia/chat', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          // Add authorization header if needed
+          // 'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          question,
+          systemPrompt
+        })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error?.message || `HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      console.error('AFIA API Error:', error);
+      throw error;
+    }
+  }
+};
+
 const ChatBot = ({ dashboardData, isVisible, onClose }) => {
   const [messages, setMessages] = useState([]);
   const [inputMessage, setInputMessage] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [showQuickActions, setShowQuickActions] = useState(false);
   const [hasInitialized, setHasInitialized] = useState(false);
+  const [isConnected, setIsConnected] = useState(true);
+  const [error, setError] = useState(null);
   const messagesEndRef = useRef(null);
 
   const scrollToBottom = () => {
@@ -53,7 +86,7 @@ const ChatBot = ({ dashboardData, isVisible, onClose }) => {
   const initialMessages = [
     {
       type: 'bot',
-      content: "Hi there! I'm AFIA, your AI retail assistant. 👋"
+      content: "Hi there! I'm AFIA AI, your Cognitive User Interface developed by Prince Mawuko Dzorkpe. 👋"
     },
     {
       type: 'bot',
@@ -61,7 +94,7 @@ const ChatBot = ({ dashboardData, isVisible, onClose }) => {
     },
     {
       type: 'bot',
-      content: "I can help you with inventory management, sales analysis, customer insights, and business recommendations. What would you like to know?"
+      content: "I can help you with inventory management, sales analysis, customer insights, transaction processing, and business recommendations. What would you like to know?"
     }
   ];
 
@@ -69,13 +102,16 @@ const ChatBot = ({ dashboardData, isVisible, onClose }) => {
     "Show today's sales summary",
     "Check low stock items",
     "Analyze customer trends",
-    "Generate sales report"
+    "Generate sales report",
+    "Process a new transaction",
+    "Check inventory levels"
   ];
 
   useEffect(() => {
     if (isVisible && !hasInitialized) {
       setHasInitialized(true);
       setMessages([]);
+      setError(null);
       
       // Add messages sequentially with delays
       initialMessages.forEach((msg, index) => {
@@ -96,6 +132,7 @@ const ChatBot = ({ dashboardData, isVisible, onClose }) => {
       setMessages([]);
       setShowQuickActions(false);
       setIsTyping(false);
+      setError(null);
     }
   }, [isVisible]);
 
@@ -104,43 +141,55 @@ const ChatBot = ({ dashboardData, isVisible, onClose }) => {
 
     // Hide quick actions once user starts chatting
     setShowQuickActions(false);
+    setError(null);
 
     const userMessage = { type: 'user', content: message };
     setMessages(prev => [...prev, userMessage]);
     setInputMessage('');
     setIsTyping(true);
 
-    setTimeout(() => {
-      const response = generateResponse(message);
-      setMessages(prev => [...prev, { type: 'bot', content: response }]);
+    try {
+      // Call AFIA AI API
+      const result = await afiaApiService.sendMessage(message);
+      
+      if (result.success) {
+        const botResponse = {
+          type: 'bot',
+          content: result.response || result.data?.response || "I've processed your request successfully!",
+          functionCalls: result.data?.functionCalls || result.functionCalls || []
+        };
+
+        setMessages(prev => [...prev, botResponse]);
+        setIsConnected(true);
+      } else {
+        throw new Error(result.error?.message || 'Failed to get response from AFIA AI');
+      }
+    } catch (error) {
+      console.error('Chat error:', error);
+      setError(error.message);
+      setIsConnected(false);
+      
+      // Add error message to chat
+      const errorMessage = {
+        type: 'bot',
+        content: `I apologize, but I'm having trouble connecting to my services right now. ${error.message.includes('fetch') ? 'Please check your internet connection and try again.' : 'Please try again in a moment.'}`,
+        isError: true
+      };
+      setMessages(prev => [...prev, errorMessage]);
+    } finally {
       setIsTyping(false);
-    }, 10 + Math.random() * 10);
+    }
   };
 
-  const generateResponse = (message) => {
-    const lowerMessage = message.toLowerCase();
-    
-    if (lowerMessage.includes('sales') || lowerMessage.includes('revenue')) {
-      return `Today's sales performance: You've generated GHS ${dashboardData?.todayStats?.revenue?.toFixed(2) || '0.00'} from ${dashboardData?.todayStats?.transactions || 0} transactions. Your average order value is GHS ${dashboardData?.todayStats?.averageOrderValue?.toFixed(2) || '0.00'}.`;
-    }
-    
-    if (lowerMessage.includes('stock') || lowerMessage.includes('inventory')) {
-      return `You have ${dashboardData?.inventory?.lowStockCount || 0} items running low on stock. The most critical items are: ${dashboardData?.inventory?.lowStockProducts?.slice(0, 2).map(p => p.name).join(', ') || 'None'}. Would you like me to help you create a restock plan?`;
-    }
-    
-    if (lowerMessage.includes('customer')) {
-      return `You currently have ${dashboardData?.customers?.totalCustomers || 0} total customers. Based on today's transactions, you're maintaining good customer engagement. Would you like tips on customer retention strategies?`;
-    }
-    
-    if (lowerMessage.includes('help')) {
-      return "I can assist you with: 📊 Sales analytics, 📦 Inventory management, 👥 Customer insights, 📈 Business recommendations, 🎯 Performance tracking. What specific area would you like to explore?";
-    }
-    
-    return "I understand you're asking about your business. Let me analyze your data... Based on your current performance, I'd recommend focusing on inventory management and customer retention strategies. Would you like specific recommendations?";
-  };
+
 
   const handleQuickAction = (action) => {
     handleSendMessage(action);
+  };
+
+  const retryConnection = () => {
+    setError(null);
+    setIsConnected(true);
   };
 
   if (!isVisible) return null;
@@ -153,7 +202,7 @@ const ChatBot = ({ dashboardData, isVisible, onClose }) => {
         onClick={onClose}
       />
       
-      {/* Chat Container - Made bigger */}
+      {/* Chat Container */}
       <div className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 h-[95vh] w-[600px] max-w-[95vw] bg-white/95 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/20 flex flex-col animate-in zoom-in-95 slide-in-from-bottom-4 duration-300 z-50 overflow-hidden">
         
         {/* Header */}
@@ -165,7 +214,9 @@ const ChatBot = ({ dashboardData, isVisible, onClose }) => {
                 <div className="w-12 h-12 bg-gradient-to-br from-blue-400 to-gray-500 rounded-2xl flex items-center justify-center shadow-lg">
                   <Bot size={24} className="text-white" />
                 </div>
-                <div className="absolute -top-1 -right-1 w-4 h-4 bg-green-400 rounded-full border-2 border-white animate-pulse" />
+                <div className={`absolute -top-1 -right-1 w-4 h-4 rounded-full border-2 border-white ${
+                  isConnected ? 'bg-green-400 animate-pulse' : 'bg-red-400'
+                }`} />
               </div>
               <div>
                 <h3 className="font-bold text-xl bg-gradient-to-r from-white to-blue-100 bg-clip-text text-transparent">
@@ -173,7 +224,7 @@ const ChatBot = ({ dashboardData, isVisible, onClose }) => {
                 </h3>
                 <p className="text-sm text-blue-200 flex items-center gap-1">
                   <Sparkles size={12} />
-                  Smart retail assistant
+                  {isConnected ? 'Cognitive User Interface' : 'Connection Error'}
                 </p>
               </div>
             </div>
@@ -186,36 +237,74 @@ const ChatBot = ({ dashboardData, isVisible, onClose }) => {
           </div>
         </div>
 
-        {/* Messages Container - More padding for bigger size */}
+        {/* Connection Error Banner */}
+        {error && (
+          <div className="bg-red-50 border-l-4 border-red-400 p-4 m-4 rounded-lg">
+            <div className="flex items-center">
+              <AlertCircle className="h-5 w-5 text-red-400 mr-2" />
+              <div className="flex-1">
+                <p className="text-sm text-red-700">Connection Issue: {error}</p>
+              </div>
+              <button
+                onClick={retryConnection}
+                className="text-sm text-red-600 hover:text-red-800 font-medium"
+              >
+                Retry
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Messages Container */}
         <div className="flex-1 overflow-y-auto p-8 space-y-4 bg-gradient-to-b from-slate-50/50 to-white/50">
           {messages.map((message, index) => (
             <div
               key={index}
               className={`flex items-start gap-4 ${message.type === 'user' ? 'flex-row-reverse' : ''}`}
             >
-              {/* Avatar - Slightly bigger */}
+              {/* Avatar */}
               <div className={`flex-shrink-0 w-12 h-12 rounded-2xl flex items-center justify-center shadow-md ${
                 message.type === 'user' 
                   ? 'bg-gradient-to-br from-blue-500 to-blue-600 text-white' 
-                  : 'bg-gradient-to-br from-slate-100 to-slate-200 border border-slate-300'
+                  : message.isError 
+                    ? 'bg-gradient-to-br from-red-100 to-red-200 border border-red-300'
+                    : 'bg-gradient-to-br from-slate-100 to-slate-200 border border-slate-300'
               }`}>
                 {message.type === 'user' ? (
                   <span className="text-sm font-semibold">You</span>
+                ) : message.isError ? (
+                  <AlertCircle size={18} className="text-red-600" />
                 ) : (
                   <Bot size={18} className="text-slate-700" />
                 )}
               </div>
               
-              {/* Message Bubble - More padding */}
+              {/* Message Bubble */}
               <div className={`max-w-[75%] px-5 py-4 rounded-2xl shadow-sm ${
                 message.type === 'user'
                   ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-tr-md'
-                  : 'bg-white border border-slate-200 text-slate-800 rounded-tl-md'
+                  : message.isError
+                    ? 'bg-red-50 border border-red-200 text-red-800 rounded-tl-md'
+                    : 'bg-white border border-slate-200 text-slate-800 rounded-tl-md'
               }`}>
                 {message.type === 'bot' && index === messages.length - 1 && !isTyping ? (
                   <TypewriterText text={message.content} speed={25} />
                 ) : (
-                  <p className="text-sm leading-relaxed">{message.content}</p>
+                  <div>
+                    <p className="text-sm leading-relaxed">{message.content}</p>
+                    {message.functionCalls && message.functionCalls.length > 0 && (
+                      <div className="mt-3 pt-3 border-t border-slate-200">
+                        <p className="text-xs text-slate-500 mb-2">Functions executed:</p>
+                        <div className="flex flex-wrap gap-1">
+                          {message.functionCalls.map((call, idx) => (
+                            <span key={idx} className="inline-block px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded-full">
+                              {call.functionName || 'Function'}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 )}
               </div>
             </div>
@@ -262,7 +351,7 @@ const ChatBot = ({ dashboardData, isVisible, onClose }) => {
           <div ref={messagesEndRef} />
         </div>
 
-        {/* Input Area - More padding */}
+        {/* Input Area */}
         <div className="p-8 bg-white/80 backdrop-blur-sm border-t border-slate-200/50">
           <div className="flex items-center gap-4">
             <div className="flex-1 relative">
@@ -270,18 +359,24 @@ const ChatBot = ({ dashboardData, isVisible, onClose }) => {
                 type="text"
                 value={inputMessage}
                 onChange={(e) => setInputMessage(e.target.value)}
-                onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
+                onKeyPress={(e) => e.key === 'Enter' && !isTyping && handleSendMessage()}
                 placeholder="Ask me anything about your store..."
-                className="w-full px-5 py-4 pr-12 bg-slate-50 border border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-slate-800 text-sm placeholder-slate-400 transition-all duration-200"
+                disabled={isTyping}
+                className="w-full px-5 py-4 pr-12 bg-slate-50 border border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-slate-800 text-sm placeholder-slate-400 transition-all duration-200 disabled:opacity-50"
               />
             </div>
             <button
               onClick={() => handleSendMessage()}
-              disabled={!inputMessage.trim()}
+              disabled={!inputMessage.trim() || isTyping}
               className="p-4 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-2xl hover:from-blue-600 hover:to-blue-700 disabled:from-slate-300 disabled:to-slate-400 disabled:cursor-not-allowed transition-all duration-200 transform hover:scale-105 active:scale-95 shadow-lg hover:shadow-xl"
             >
               <Send size={20} />
             </button>
+          </div>
+          <div className="mt-2 text-center">
+            <p className="text-xs text-slate-400">
+              {isConnected ? 'Connected to AFIA AI' : 'Offline mode - limited functionality'}
+            </p>
           </div>
         </div>
       </div>
