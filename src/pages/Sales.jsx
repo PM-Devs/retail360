@@ -2,97 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { Search, ShoppingCart, Plus, Minus, X, CreditCard, Banknote, Smartphone, Receipt, Printer, Share2, QrCode, Camera, User, MapPin, Mail, Phone, Bot } from 'lucide-react';
 import Navbar from '../components/Navbar';
 import Sidebar from '../components/Sidebar';
-
 import ChatBot from '../components/ChatBot';
 
-// Mock data with images
-const mockProducts = [
-  { 
-    id: 'prod_1', 
-    name: 'Coca Cola 500ml', 
-    price: 2.50, 
-    stock: 45, 
-    category: 'Beverages',
-    barcode: '123456789001',
-    image: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgdmlld0JveD0iMCAwIDEwMCAxMDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIxMDAiIGhlaWdodD0iMTAwIiBmaWxsPSIjREMxNjI2Ii8+Cjx0ZXh0IHg9IjUwIiB5PSI0NSIgZm9udC1mYW1pbHk9IkFyaWFsIiBmb250LXNpemU9IjE0IiBmaWxsPSJ3aGl0ZSIgdGV4dC1hbmNob3I9Im1pZGRsZSI+Q29jYTwvdGV4dD4KPHR0ZXh0IHg9IjUwIiB5PSI2NSIgZm9udC1mYW1pbHk9IkFyaWFsIiBmb250LXNpemU9IjE0IiBmaWxsPSJ3aGl0ZSIgdGV4dC1hbmNob3I9Im1pZGRsZSI+Q29sYTwvdGV4dD4KPC9zdmc+'
-  },
-  { 
-    id: 'prod_2', 
-    name: 'Bread Loaf', 
-    price: 3.20, 
-    stock: 23, 
-    category: 'Bakery',
-    barcode: '123456789002',
-    image: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgdmlld0JveD0iMCAwIDEwMCAxMDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIxMDAiIGhlaWdodD0iMTAwIiBmaWxsPSIjRDQ5NzM5Ii8+Cjx0ZXh0IHg9IjUwIiB5PSI0NSIgZm9udC1mYW1pbHk9IkFyaWFsIiBmb250LXNpemU9IjEyIiBmaWxsPSJ3aGl0ZSIgdGV4dC1hbmNob3I9Im1pZGRsZSI+QnJlYWQ8L3RleHQ+Cjx0ZXh0IHg9IjUwIiB5PSI2NSIgZm9udC1mYW1pbHk9IkFyaWFsIiBmb250LXNpemU9IjEyIiBmaWxsPSJ3aGl0ZSIgdGV4dC1hbmNob3I9Im1pZGRsZSI+TG9hZjwvdGV4dD4KPC9zdmc+'
-  },
-  { 
-    id: 'prod_3', 
-    name: 'Milk 1L', 
-    price: 5.80, 
-    stock: 18, 
-    category: 'Dairy',
-    barcode: '123456789003',
-    image: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgdmlld0JveD0iMCAwIDEwMCAxMDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIxMDAiIGhlaWdodD0iMTAwIiBmaWxsPSIjRkZGRkZGIiBzdHJva2U9IiNFNUU3RUIiIHN0cm9rZS13aWR0aD0iMiIvPgo8dGV4dCB4PSI1MCIgeT0iNDUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxNCIgZmlsbD0iIzM3NDE0QSIgdGV4dC1hbmNob3I9Im1pZGRsZSI+TWlsazwvdGV4dD4KPHR0ZXh0IHg9IjUwIiB5PSI2NSIgZm9udC1mYW1pbHk9IkFyaWFsIiBmb250LXNpemU9IjEyIiBmaWxsPSIjMzc0MTRBIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIj4xTDwvdGV4dD4KPC9zdmc+'
-  },
-  { 
-    id: 'prod_4', 
-    name: 'Rice 2kg', 
-    price: 15.00, 
-    stock: 12, 
-    category: 'Grains',
-    barcode: '123456789004',
-    image: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgdmlld0JveD0iMCAwIDEwMCAxMDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIxMDAiIGhlaWdodD0iMTAwIiBmaWxsPSIjRkJGNUYzIiBzdHJva2U9IiNEQ0MzQkIiIHN0cm9rZS13aWR0aD0iMiIvPgo8dGV4dCB4PSI1MCIgeT0iNDUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxNCIgZmlsbD0iIzM3NDE0QSIgdGV4dC1hbmNob3I9Im1pZGRsZSI+UmljZTwvdGV4dD4KPHR0ZXh0IHg9IjUwIiB5PSI2NSIgZm9udC1mYW1pbHk9IkFyaWFsIiBmb250LXNpemU9IjEyIiBmaWxsPSIjMzc0MTRBIIB0ZXh0LWFuY2hvcj0ibWlkZGxlIj4ya2c8L3RleHQ+Cjwvc3ZnPg=='
-  },
-  { 
-    id: 'prod_5', 
-    name: 'Cooking Oil 1L', 
-    price: 12.50, 
-    stock: 8, 
-    category: 'Cooking',
-    barcode: '123456789005',
-    image: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgdmlld0JveD0iMCAwIDEwMCAxMDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIxMDAiIGhlaWdodD0iMTAwIiBmaWxsPSIjRkZEODAwIi8+Cjx0ZXh0IHg9IjUwIiB5PSI0MCIgZm9udC1mYW1pbHk9IkFyaWFsIiBmb250LXNpemU9IjEwIiBmaWxsPSIjMzc0MTRBIIB0ZXh0LWFuY2hvcj0ibWlkZGxlIj5Db29raW5nPC90ZXh0Pgo8dGV4dCB4PSI1MCIgeT0iNTgiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxMiIgZmlsbD0iIzM3NDE0QSIgdGV4dC1hbmNob3I9Im1pZGRsZSI+T2lsPC90ZXh0Pgo8dGV4dCB4PSI1MCIgeT0iNzQiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxMCIgZmlsbD0iIzM3NDE0QSIgdGV4dC1hbmNob3I9Im1pZGRsZSI+MUw8L3RleHQ+Cjwvc3ZnPg=='
-  }
-];
-
-const mockCustomers = [
-  { id: 'cust_1', name: 'Jane Smith', phone: '+233987654321', email: 'jane@email.com', address: '123 Main St, Accra' },
-  { id: 'cust_2', name: 'John Doe', phone: '+233123456789', email: 'john@email.com', address: '456 Oak Ave, Kumasi' },
-  { id: 'cust_3', name: 'Mary Johnson', phone: '+233555666777', email: 'mary@email.com', address: '789 Pine Rd, Takoradi' }
-];
-
-const mockSales = [
-  {
-    id: 'sale_1',
-    saleNumber: 'INV-2024-001',
-    customer: { name: 'Jane Smith', phone: '+233987654321', email: 'jane@email.com' },
-    totals: { subtotal: 25.00, tax: 2.50, total: 27.50 },
-    payment: { method: 'cash', status: 'completed' },
-    createdAt: '2024-01-15T14:30:00Z',
-    items: [
-      { product: 'prod_1', productName: 'Coca Cola 500ml', quantity: 2, unitPrice: 2.50, totalPrice: 5.00 },
-      { product: 'prod_2', productName: 'Bread Loaf', quantity: 1, unitPrice: 3.20, totalPrice: 3.20 },
-      { product: 'prod_4', productName: 'Rice 2kg', quantity: 1, unitPrice: 15.00, totalPrice: 15.00 }
-    ]
-  }
-];
-
-const mockDashboardData = {
-  todayStats: {
-    revenue: 1250.75,
-    transactions: 24,
-    averageOrderValue: 52.11
-  },
-  customers: {
-    totalCustomers: 120
-  },
-  inventory: {
-    lowStockCount: 5,
-    lowStockProducts: [
-      { name: "Coca Cola 500ml" },
-      { name: "Milk 1L" }
-    ]
-  }
-};
+const BASE_API = 'https://retail360-backend.vercel.app';
 
 const POS = () => {
   const [currentPage, setCurrentPage] = useState('pos');
@@ -113,12 +25,21 @@ const POS = () => {
   
   // State for integrated components
   const [sidebarOpen, setSidebarOpen] = useState(true);
-
   const [chatBotOpen, setChatBotOpen] = useState(false);
 
   // Mobile responsiveness state
   const [isMobile, setIsMobile] = useState(false);
   const [showMobileCart, setShowMobileCart] = useState(false);
+
+  // Data states
+  const [products, setProducts] = useState([]);
+  const [customers, setCustomers] = useState([]);
+  const [dashboardData, setDashboardData] = useState({});
+  const [loading, setLoading] = useState(false);
+
+  // User data from localStorage
+  const [userData, setUserData] = useState(null);
+  const [authToken, setAuthToken] = useState(null);
 
   // Check for mobile/tablet screen sizes
   useEffect(() => {
@@ -134,38 +55,215 @@ const POS = () => {
     return () => window.removeEventListener('resize', checkScreenSize);
   }, []);
 
-  const filteredProducts = mockProducts.filter(product =>
-    product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    product.barcode.includes(searchQuery)
-  );
+  // Initialize user data and fetch initial data
+  useEffect(() => {
+    const storedUserData = localStorage.getItem('userData');
+    const storedAuthToken = localStorage.getItem('authToken');
+    
+    if (storedUserData && storedAuthToken) {
+      setUserData(JSON.parse(storedUserData));
+      setAuthToken(storedAuthToken);
+    }
+  }, []);
 
-  // API CALL: POST /api/products/search
-  // Params: { query: searchQuery, shopId: 'shop_123' }
-  // Response: [{ id, name, price, stock, category, barcode, image }]
-  const fetchProducts = async () => {
-    // const response = await fetch('/api/products/search', {
-    //   method: 'POST',
-    //   headers: { 'Content-Type': 'application/json' },
-    //   body: JSON.stringify({ query: searchQuery, shopId: 'shop_123' })
-    // });
-    // return response.json();
+  // Fetch data when user data is available
+  useEffect(() => {
+    if (userData?.currentShop && authToken) {
+      fetchProducts();
+      fetchCustomers();
+      fetchDashboardData();
+    }
+  }, [userData, authToken]);
+
+  // API helper function
+  const apiCall = async (endpoint, options = {}) => {
+    try {
+      const response = await fetch(`${BASE_API}${endpoint}`, {
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${authToken}`,
+          ...options.headers
+        },
+        ...options
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('API call failed:', error);
+      throw error;
+    }
   };
 
+  // Fetch products
+  const fetchProducts = async () => {
+    try {
+      setLoading(true);
+      const response = await apiCall(`/api/products/shop/${userData.currentShop}`);
+      if (response.success) {
+        setProducts(response.data);
+      }
+    } catch (error) {
+      console.error('Failed to fetch products:', error);
+      alert('Failed to load products');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Search products
+  const searchProducts = async (query) => {
+    if (!query.trim()) {
+      fetchProducts();
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const response = await apiCall('/api/products/search', {
+        method: 'POST',
+        body: JSON.stringify({ 
+          query, 
+          shopId: userData.currentShop 
+        })
+      });
+      
+      if (response.success) {
+        setProducts(response.data);
+      }
+    } catch (error) {
+      console.error('Failed to search products:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Fetch product by barcode
+  const fetchProductByBarcode = async (barcode) => {
+    try {
+      const response = await apiCall(`/api/products/barcode/${barcode}`);
+      if (response.success) {
+        return response.data;
+      }
+    } catch (error) {
+      console.error('Failed to fetch product by barcode:', error);
+      return null;
+    }
+  };
+
+  // Fetch customers
+  const fetchCustomers = async () => {
+    try {
+      const response = await apiCall(`/api/customers?shopId=${userData.currentShop}`);
+      if (response.success) {
+        setCustomers(response.data);
+      }
+    } catch (error) {
+      console.error('Failed to fetch customers:', error);
+    }
+  };
+
+  // Create customer
+  const createCustomer = async (customerData) => {
+    try {
+      const response = await apiCall('/api/customers', {
+        method: 'POST',
+        body: JSON.stringify({ 
+          ...customerData, 
+          shopId: userData.currentShop 
+        })
+      });
+      
+      if (response.success) {
+        setCustomers([...customers, response.data]);
+        return response.data;
+      }
+    } catch (error) {
+      console.error('Failed to create customer:', error);
+      throw error;
+    }
+  };
+
+  // Fetch dashboard data
+  const fetchDashboardData = async () => {
+    try {
+      const response = await apiCall(`/api/analytics/dashboard/${userData.currentShop}`);
+      if (response.success) {
+        setDashboardData(response.data);
+      }
+    } catch (error) {
+      console.error('Failed to fetch dashboard data:', error);
+    }
+  };
+
+  // Create sale
+  const createSale = async (saleData) => {
+    try {
+      const response = await apiCall('/api/sales', {
+        method: 'POST',
+        body: JSON.stringify(saleData)
+      });
+      
+      if (response.success) {
+        return response.data;
+      }
+    } catch (error) {
+      console.error('Failed to create sale:', error);
+      throw error;
+    }
+  };
+
+  // Update product stock
+  const updateProductStock = async (stockUpdates) => {
+    try {
+      const response = await apiCall('/api/products/stock', {
+        method: 'PUT',
+        body: JSON.stringify(stockUpdates)
+      });
+      
+      return response.success;
+    } catch (error) {
+      console.error('Failed to update stock:', error);
+      return false;
+    }
+  };
+
+  // Handle search with debounce
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (searchQuery) {
+        searchProducts(searchQuery);
+      } else {
+        fetchProducts();
+      }
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  const filteredProducts = products.filter(product =>
+    product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (product.barcode && product.barcode.includes(searchQuery))
+  );
+
   const addToCart = (product) => {
-    const existingItem = cartItems.find(item => item.product === product.id);
+    const existingItem = cartItems.find(item => item.product === product._id);
     if (existingItem) {
       setCartItems(cartItems.map(item =>
-        item.product === product.id
+        item.product === product._id
           ? { ...item, quantity: item.quantity + 1, totalPrice: (item.quantity + 1) * item.unitPrice }
           : item
       ));
     } else {
       setCartItems([...cartItems, {
-        product: product.id,
+        product: product._id,
         productName: product.name,
         quantity: 1,
-        unitPrice: product.price,
-        totalPrice: product.price
+        unitPrice: product.sellingPrice,
+        totalPrice: product.sellingPrice
       }]);
     }
 
@@ -175,22 +273,19 @@ const POS = () => {
     }
   };
 
-  const handleBarcodeSearch = (barcode) => {
-    const product = mockProducts.find(p => p.barcode === barcode);
-    if (product) {
-      addToCart(product);
-      setSearchQuery('');
-      setShowScanModal(false);
-    } else {
-      alert('Product not found with barcode: ' + barcode);
+  const handleBarcodeSearch = async (barcode) => {
+    try {
+      const product = await fetchProductByBarcode(barcode);
+      if (product) {
+        addToCart(product);
+        setSearchQuery('');
+        setShowScanModal(false);
+      } else {
+        alert('Product not found with barcode: ' + barcode);
+      }
+    } catch (error) {
+      alert('Failed to search product by barcode');
     }
-  };
-
-  // API CALL: GET /api/products/barcode/:barcode
-  // Response: { id, name, price, stock, category, barcode, image }
-  const fetchProductByBarcode = async (barcode) => {
-    // const response = await fetch(`/api/products/barcode/${barcode}`);
-    // return response.json();
   };
 
   const updateQuantity = (productId, newQuantity) => {
@@ -216,102 +311,80 @@ const POS = () => {
     return { subtotal, tax, total };
   };
 
-  const addNewCustomer = () => {
+  const addNewCustomer = async () => {
     if (newCustomer.name && newCustomer.phone) {
-      const customer = {
-        id: `cust_new_${Date.now()}`,
-        ...newCustomer
-      };
-      mockCustomers.push(customer);
-      setSelectedCustomer(customer);
-      setNewCustomer({ name: '', phone: '', email: '', address: '' });
-      setShowCustomerModal(false);
+      try {
+        const customer = await createCustomer(newCustomer);
+        setSelectedCustomer(customer);
+        setNewCustomer({ name: '', phone: '', email: '', address: '' });
+        setShowCustomerModal(false);
+      } catch (error) {
+        alert('Failed to create customer');
+      }
     }
   };
 
-  // API CALL: POST /api/customers
-  // Params: { name, phone, email, address, shopId: 'shop_123' }
-  // Response: { id, name, phone, email, address }
-  const createCustomer = async (customerData) => {
-    // const response = await fetch('/api/customers', {
-    //   method: 'POST',
-    //   headers: { 'Content-Type': 'application/json' },
-    //   body: JSON.stringify({ ...customerData, shopId: 'shop_123' })
-    // });
-    // return response.json();
-  };
-
-  // API CALL: GET /api/customers?shopId=shop_123
-  // Response: [{ id, name, phone, email, address }]
-  const fetchCustomers = async () => {
-    // const response = await fetch('/api/customers?shopId=shop_123');
-    // return response.json();
-  };
-
-  const processSale = () => {
+  const processSale = async () => {
     if (cartItems.length === 0) return;
     
-    const totals = calculateTotals();
-    const paid = parseFloat(amountPaid) || totals.total;
-    const change = paid - totals.total;
+    try {
+      setLoading(true);
+      const totals = calculateTotals();
+      const paid = parseFloat(amountPaid) || totals.total;
+      const change = paid - totals.total;
 
-    const saleData = {
-      id: `sale_${Date.now()}`,
-      saleNumber: `INV-2024-${String(mockSales.length + 1).padStart(3, '0')}`,
-      shopId: 'shop_123',
-      customer: selectedCustomer || { name: 'Walk-in Customer', phone: 'N/A' },
-      cashier: 'user_123',
-      items: cartItems,
-      totals,
-      payment: {
-        method: paymentMethod,
-        amount: paid,
-        change: Math.max(0, change),
-        status: 'completed'
-      },
-      createdAt: new Date().toISOString()
-    };
+      const saleData = {
+        shopId: userData.currentShop,
+        customerId: selectedCustomer?._id,
+        cashier: userData.id,
+        items: cartItems.map(item => ({
+          product: item.product,
+          quantity: item.quantity,
+          unitPrice: item.unitPrice
+        })),
+        totals,
+        payment: {
+          method: paymentMethod,
+          amount: paid,
+          change: Math.max(0, change),
+          status: 'completed'
+        }
+      };
 
-    mockSales.unshift(saleData);
-    
-    // Clear cart after sale
-    setCartItems([]);
-    setSelectedCustomer(null);
-    setAmountPaid('');
-    setShowMobileCart(false);
-    
-    // Show receipt
-    setSelectedSale(saleData);
-    setCurrentPage('receipt');
-    
-    alert('Sale processed successfully!');
+      const sale = await createSale(saleData);
+      
+      // Update stock
+      const stockUpdates = cartItems.map(item => ({
+        productId: item.product,
+        quantitySold: item.quantity
+      }));
+      
+      await updateProductStock(stockUpdates);
+      
+      // Clear cart after sale
+      setCartItems([]);
+      setSelectedCustomer(null);
+      setAmountPaid('');
+      setShowMobileCart(false);
+      
+      // Show receipt
+      setSelectedSale(sale);
+      setCurrentPage('receipt');
+      
+      alert('Sale processed successfully!');
+      
+      // Refresh data
+      fetchProducts();
+      fetchDashboardData();
+      
+    } catch (error) {
+      alert('Failed to process sale');
+    } finally {
+      setLoading(false);
+    }
   };
 
-  // API CALL: POST /api/sales
-  // Params: { shopId, customerId, cashierId, items, totals, payment }
-  // Response: { id, saleNumber, totals, payment, createdAt }
-  const createSale = async (saleData) => {
-    // const response = await fetch('/api/sales', {
-    //   method: 'POST',
-    //   headers: { 'Content-Type': 'application/json' },
-    //   body: JSON.stringify(saleData)
-    // });
-    // return response.json();
-  };
-
-  // API CALL: PUT /api/products/stock
-  // Params: [{ productId, quantitySold }]
-  // Response: { success: true }
-  const updateProductStock = async (stockUpdates) => {
-    // const response = await fetch('/api/products/stock', {
-    //   method: 'PUT',
-    //   headers: { 'Content-Type': 'application/json' },
-    //   body: JSON.stringify(stockUpdates)
-    // });
-    // return response.json();
-  };
-
-  const formatCurrency = (amount) => `GHS ${amount.toFixed(2)}`;
+  const formatCurrency = (amount) => `GHS ${amount?.toFixed(2) || '0.00'}`;
   const formatDate = (dateString) => new Date(dateString).toLocaleString();
 
   // Scanner Modal Component
@@ -436,8 +509,9 @@ const POS = () => {
             <button
               onClick={addNewCustomer}
               className="flex-1 bg-black text-white py-2 md:py-3 rounded-lg font-medium hover:bg-gray-800 transition-colors text-sm md:text-base"
+              disabled={loading}
             >
-              Add Customer
+              {loading ? 'Adding...' : 'Add Customer'}
             </button>
           </div>
         </div>
@@ -470,12 +544,12 @@ const POS = () => {
             <div className="flex space-x-2">
               <select
                 className="flex-1 p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                value={selectedCustomer?.id || ''}
-                onChange={(e) => setSelectedCustomer(mockCustomers.find(c => c.id === e.target.value))}
+                value={selectedCustomer?._id || ''}
+                onChange={(e) => setSelectedCustomer(customers.find(c => c._id === e.target.value))}
               >
                 <option value="">Select Customer</option>
-                {mockCustomers.map(customer => (
-                  <option key={customer.id} value={customer.id}>
+                {customers.map(customer => (
+                  <option key={customer._id} value={customer._id}>
                     {customer.name} - {customer.phone}
                   </option>
                 ))}
@@ -639,10 +713,10 @@ const POS = () => {
             <button
               onClick={processSale}
               className="w-full bg-black text-white py-4 rounded-lg font-medium hover:bg-gray-800 transition-colors flex items-center justify-center"
-              disabled={paymentMethod === 'cash' && (!amountPaid || parseFloat(amountPaid) < calculateTotals().total)}
+              disabled={loading || (paymentMethod === 'cash' && (!amountPaid || parseFloat(amountPaid) < calculateTotals().total))}
             >
               <Receipt className="w-5 h-5 mr-2" />
-              Complete Sale
+              {loading ? 'Processing...' : 'Complete Sale'}
             </button>
           </div>
         )}
@@ -665,10 +739,10 @@ const POS = () => {
                 className="w-full pl-8 md:pl-10 pr-4 py-2 md:py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm md:text-base"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                onKeyPress={(e) => {
+                onKeyPress={async (e) => {
                   if (e.key === 'Enter' && searchQuery) {
                     // Check if it's a barcode
-                    const product = mockProducts.find(p => p.barcode === searchQuery);
+                    const product = await fetchProductByBarcode(searchQuery);
                     if (product) {
                       addToCart(product);
                       setSearchQuery('');
@@ -687,33 +761,52 @@ const POS = () => {
           </div>
         </div>
 
+        {loading && (
+          <div className="text-center py-4">
+            <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-black"></div>
+            <p className="mt-2 text-gray-600">Loading products...</p>
+          </div>
+        )}
+
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-2 xl:grid-cols-3 gap-3 md:gap-4 max-h-64 md:max-h-96 overflow-y-auto">
           {filteredProducts.map((product) => (
             <div
-              key={product.id}
+              key={product._id}
               className="border border-gray-200 rounded-lg p-3 md:p-4 hover:shadow-md transition-shadow cursor-pointer"
               onClick={() => addToCart(product)}
             >
               <div className="mb-2 md:mb-3">
-                <img
-                  src={product.image}
-                  alt={product.name}
-                  className="w-full h-12 md:h-16 object-cover rounded"
-                />
+                {product.images && product.images.length > 0 ? (
+                  <img
+                    src={product.images[0]}
+                    alt={product.name}
+                    className="w-full h-12 md:h-16 object-cover rounded"
+                  />
+                ) : (
+                  <div className="w-full h-12 md:h-16 bg-gray-200 rounded flex items-center justify-center">
+                    <span className="text-gray-400 text-xs">No Image</span>
+                  </div>
+                )}
               </div>
               <div className="flex justify-between items-start mb-1 md:mb-2">
                 <h3 className="font-medium text-gray-900 text-xs md:text-sm leading-tight">{product.name}</h3>
-                <span className="text-sm md:text-lg font-bold text-gray-900 ml-1">{formatCurrency(product.price)}</span>
+                <span className="text-sm md:text-lg font-bold text-gray-900 ml-1">{formatCurrency(product.sellingPrice)}</span>
               </div>
               <div className="text-xs text-gray-500 mb-1 md:mb-2">Stock: {product.stock}</div>
               <div className="flex justify-between items-center">
                 <span className="inline-block bg-gray-100 text-gray-600 text-xs px-2 py-1 rounded">
-                  {product.category}
+                  {product.category?.name || 'Uncategorized'}
                 </span>
-                <span className="text-xs text-gray-400 hidden md:inline">{product.barcode}</span>
+                <span className="text-xs text-gray-400 hidden md:inline">{product.barcode || 'N/A'}</span>
               </div>
             </div>
           ))}
+          
+          {!loading && filteredProducts.length === 0 && (
+            <div className="col-span-full text-center py-8 text-gray-500">
+              <p>No products found</p>
+            </div>
+          )}
         </div>
       </div>
 
@@ -732,12 +825,12 @@ const POS = () => {
             <div className="flex space-x-2">
               <select
                 className="flex-1 p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                value={selectedCustomer?.id || ''}
-                onChange={(e) => setSelectedCustomer(mockCustomers.find(c => c.id === e.target.value))}
+                value={selectedCustomer?._id || ''}
+                onChange={(e) => setSelectedCustomer(customers.find(c => c._id === e.target.value))}
               >
                 <option value="">Select Customer</option>
-                {mockCustomers.map(customer => (
-                  <option key={customer.id} value={customer.id}>
+                {customers.map(customer => (
+                  <option key={customer._id} value={customer._id}>
                     {customer.name} - {customer.phone}
                   </option>
                 ))}
@@ -905,10 +998,10 @@ const POS = () => {
                 <button
                   onClick={processSale}
                   className="w-full bg-black text-white py-4 rounded-lg font-medium hover:bg-gray-800 transition-colors flex items-center justify-center"
-                  disabled={paymentMethod === 'cash' && (!amountPaid || parseFloat(amountPaid) < calculateTotals().total)}
+                  disabled={loading || (paymentMethod === 'cash' && (!amountPaid || parseFloat(amountPaid) < calculateTotals().total))}
                 >
                   <Receipt className="w-5 h-5 mr-2" />
-                  Complete Sale
+                  {loading ? 'Processing...' : 'Complete Sale'}
                 </button>
               </>
             )}
@@ -941,8 +1034,8 @@ const POS = () => {
       <div className="flex flex-col sm:flex-row justify-between items-start mb-6 md:mb-8 space-y-4 sm:space-y-0">
         <div>
           <h2 className="text-xl md:text-2xl font-bold mb-2">Sales Receipt</h2>
-          <p className="text-gray-600">{selectedSale.saleNumber}</p>
-          <p className="text-gray-600">{formatDate(selectedSale.createdAt)}</p>
+          <p className="text-gray-600">{selectedSale?.saleNumber}</p>
+          <p className="text-gray-600">{selectedSale && formatDate(selectedSale.createdAt)}</p>
         </div>
         <div className="flex space-x-2">
           <button
@@ -960,63 +1053,76 @@ const POS = () => {
         </div>
       </div>
 
-      <div className="border-t border-b py-4 mb-6">
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div>
-            <h3 className="font-medium mb-2">Customer</h3>
-            <p>{selectedSale.customer.name}</p>
-            <p>{selectedSale.customer.phone}</p>
-            {selectedSale.customer.email && <p>{selectedSale.customer.email}</p>}
+      {selectedSale && (
+        <>
+          <div className="border-t border-b py-4 mb-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <h3 className="font-medium mb-2">Customer</h3>
+                <p>{selectedSale.customer?.name || 'Walk-in Customer'}</p>
+                <p>{selectedSale.customer?.phone || 'N/A'}</p>
+                {selectedSale.customer?.email && <p>{selectedSale.customer.email}</p>}
+              </div>
+              <div className="sm:text-right">
+                <h3 className="font-medium mb-2">Payment</h3>
+                <p className="capitalize">{selectedSale.payment?.method}</p>
+                <p>{selectedSale.payment?.status}</p>
+              </div>
+            </div>
           </div>
-          <div className="sm:text-right">
-            <h3 className="font-medium mb-2">Payment</h3>
-            <p className="capitalize">{selectedSale.payment.method}</p>
-            <p>{selectedSale.payment.status}</p>
+
+          <div className="overflow-x-auto mb-6">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b">
+                  <th className="text-left py-2 text-sm md:text-base">Item</th>
+                  <th className="text-right py-2 text-sm md:text-base">Qty</th>
+                  <th className="text-right py-2 text-sm md:text-base">Price</th>
+                  <th className="text-right py-2 text-sm md:text-base">Total</th>
+                </tr>
+              </thead>
+              <tbody>
+                {selectedSale.items?.map((item, index) => (
+                  <tr key={index} className="border-b">
+                    <td className="py-2 text-sm md:text-base">{item.product?.name || item.productName}</td>
+                    <td className="text-right text-sm md:text-base">{item.quantity}</td>
+                    <td className="text-right text-sm md:text-base">{formatCurrency(item.unitPrice)}</td>
+                    <td className="text-right text-sm md:text-base">{formatCurrency(item.totalPrice)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
-        </div>
-      </div>
 
-      <div className="overflow-x-auto mb-6">
-        <table className="w-full">
-          <thead>
-            <tr className="border-b">
-              <th className="text-left py-2 text-sm md:text-base">Item</th>
-              <th className="text-right py-2 text-sm md:text-base">Qty</th>
-              <th className="text-right py-2 text-sm md:text-base">Price</th>
-              <th className="text-right py-2 text-sm md:text-base">Total</th>
-            </tr>
-          </thead>
-          <tbody>
-            {selectedSale.items.map((item, index) => (
-              <tr key={index} className="border-b">
-                <td className="py-2 text-sm md:text-base">{item.productName}</td>
-                <td className="text-right text-sm md:text-base">{item.quantity}</td>
-                <td className="text-right text-sm md:text-base">{formatCurrency(item.unitPrice)}</td>
-                <td className="text-right text-sm md:text-base">{formatCurrency(item.totalPrice)}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-
-      <div className="space-y-2">
-        <div className="flex justify-between text-sm md:text-base">
-          <span className="text-gray-600">Subtotal</span>
-          <span>{formatCurrency(selectedSale.totals.subtotal)}</span>
-        </div>
-        <div className="flex justify-between text-sm md:text-base">
-          <span className="text-gray-600">Tax</span>
-          <span>{formatCurrency(selectedSale.totals.tax)}</span>
-        </div>
-        <div className="flex justify-between text-lg font-bold">
-          <span>Total</span>
-          <span>{formatCurrency(selectedSale.totals.total)}</span>
-        </div>
-      </div>
+          <div className="space-y-2">
+            <div className="flex justify-between text-sm md:text-base">
+              <span className="text-gray-600">Subtotal</span>
+              <span>{formatCurrency(selectedSale.totals?.subtotal)}</span>
+            </div>
+            <div className="flex justify-between text-sm md:text-base">
+              <span className="text-gray-600">Tax</span>
+              <span>{formatCurrency(selectedSale.totals?.tax)}</span>
+            </div>
+            <div className="flex justify-between text-lg font-bold">
+              <span>Total</span>
+              <span>{formatCurrency(selectedSale.totals?.total)}</span>
+            </div>
+            {selectedSale.payment?.method === 'cash' && selectedSale.payment?.change > 0 && (
+              <div className="flex justify-between text-sm md:text-base">
+                <span className="text-gray-600">Change</span>
+                <span>{formatCurrency(selectedSale.payment.change)}</span>
+              </div>
+            )}
+          </div>
+        </>
+      )}
 
       <div className="mt-8">
         <button
-          onClick={() => setCurrentPage('pos')}
+          onClick={() => {
+            setCurrentPage('pos');
+            setSelectedSale(null);
+          }}
           className="w-full bg-black text-white py-3 rounded-lg font-medium hover:bg-gray-800"
         >
           New Sale
@@ -1024,6 +1130,33 @@ const POS = () => {
       </div>
     </div>
   );
+
+  if (!userData || !authToken) {
+    return (
+      <div className="h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-black mb-4"></div>
+          <p className="text-gray-600">Loading user data...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!userData.currentShop) {
+    return (
+      <div className="h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <p className="text-gray-600 mb-4">No shop selected. Please select a shop to continue.</p>
+          <button 
+            onClick={() => window.location.href = '/dashboard'}
+            className="bg-black text-white px-6 py-3 rounded-lg font-medium hover:bg-gray-800"
+          >
+            Go to Dashboard
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="h-screen flex bg-gray-50">
@@ -1061,7 +1194,7 @@ const POS = () => {
       
       {/* ChatBot */}
       <ChatBot 
-        dashboardData={mockDashboardData} 
+        dashboardData={dashboardData} 
         isVisible={chatBotOpen} 
         onClose={() => setChatBotOpen(false)}
       />

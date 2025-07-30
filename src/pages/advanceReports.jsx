@@ -1,143 +1,384 @@
-import React, { useState} from 'react';
+import React, { useState, useEffect } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, BarChart, Bar, PieChart, Pie, Cell } from 'recharts';
-import { Calendar, Download, FileText, BarChart3, TrendingUp, ShoppingCart, Users, DollarSign, Printer, Bot } from 'lucide-react';
+import { Calendar, Download, FileText, BarChart3, TrendingUp, ShoppingCart, Users, DollarSign, Printer, Bot, Plus } from 'lucide-react';
+import { toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 // Import your existing components
 import Navbar from '../components/Navbar.jsx';
 import Sidebar from '../components/Sidebar.jsx';
-
 import ChatBot from '../components/ChatBot.jsx';
+
+// Add this Modal component since it was missing
+const Modal = ({ isOpen, onClose, title, children }) => {
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-lg w-full max-w-md mx-4">
+        <div className="border-b px-6 py-4 flex justify-between items-center">
+          <h3 className="text-lg font-semibold">{title}</h3>
+          <button onClick={onClose} className="text-gray-500 hover:text-gray-700">
+            &times;
+          </button>
+        </div>
+        <div className="p-6">
+          {children}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+
+const API_BASE_URL = 'https://retail360-backend.vercel.app';
 
 const AnalyticsDashboard = () => {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [dateRange, setDateRange] = useState({
-    startDate: '2024-01-01',
-    endDate: '2024-12-31'
+    startDate: new Date().toISOString().split('T')[0],
+    endDate: new Date().toISOString().split('T')[0]
   });
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
-  
-  // Sidebar and modal states
   const [sidebarOpen, setSidebarOpen] = useState(true);
-
   const [isChatBotVisible, setIsChatBotVisible] = useState(false);
+  const [isCrossShopModalOpen, setIsCrossShopModalOpen] = useState(false);
+  const [crossShopData, setCrossShopData] = useState({
+    fromShop: '',
+    toShop: '',
+    user: '',
+    transactionType: 'payment',
+    amount: 0,
+    description: ''
+  });
+  const [shops, setShops] = useState([]);
+  const [users, setUsers] = useState([]);
 
-  // Sample dashboard data for components
-  const dashboardData = {
-    todayStats: {
-      revenue: 625.00,
-      transactions: 25,
-      averageOrderValue: 25.00
-    },
-    customers: {
-      totalCustomers: 1240
-    },
-    inventory: {
-      lowStockCount: 3,
-      lowStockProducts: [
-        { name: 'Coca Cola 500ml' },
-        { name: 'Bread Loaf' }
-      ]
+  // Dashboard data states
+  const [dashboardData, setDashboardData] = useState({
+    todayStats: { revenue: 0, transactions: 0, averageOrderValue: 0 },
+    customers: { totalCustomers: 0 },
+    inventory: { lowStockCount: 0, lowStockProducts: [] }
+  });
+  
+  const [revenueData, setRevenueData] = useState([]);
+  const [topProductsData, setTopProductsData] = useState([]);
+  const [paymentMethodsData, setPaymentMethodsData] = useState([]);
+  const [salesAnalytics, setSalesAnalytics] = useState({
+    totalProductsSold: 0,
+    totalRevenue: 0,
+    totalProfit: 0,
+    topProducts: []
+  });
+  const [dailyReportData, setDailyReportData] = useState({
+    date: '',
+    totalSales: 0,
+    totalRevenue: 0,
+    totalProfit: 0,
+    totalCustomers: 0,
+    topSellingProduct: '',
+    paymentBreakdown: { cash: 0, card: 0, mobileMoney: 0 }
+  });
+
+  // Get shopId and token from localStorage
+  const shopId = localStorage.getItem('shopId');
+  const token = localStorage.getItem('token');
+
+  // Fetch all data
+  useEffect(() => {
+    if (shopId && token) {
+      fetchDashboardData();
+      fetchRevenueData();
+      fetchTopProductsData();
+      fetchPaymentMethodsData();
+      fetchSalesAnalytics();
+      fetchDailyReportData();
+      fetchShops();
+      fetchUsers();
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dateRange, selectedDate]);
+
+  // API fetch functions
+  const fetchDashboardData = async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/dashboard/${shopId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const data = await response.json();
+      if (data.success) {
+        setDashboardData(data.data);
+      }
+    } catch (error) {
+      toast.error('Failed to load dashboard data');
     }
   };
 
-  // API CALL TODO: Replace with actual API endpoint
-  // GET /api/analytics/revenue?startDate=${dateRange.startDate}&endDate=${dateRange.endDate}
-  const revenueData = [
-    { month: 'Jan', revenue: 4000, profit: 1200 },
-    { month: 'Feb', revenue: 3000, profit: 900 },
-    { month: 'Mar', revenue: 5000, profit: 1500 },
-    { month: 'Apr', revenue: 4500, profit: 1350 },
-    { month: 'May', revenue: 6000, profit: 1800 },
-    { month: 'Jun', revenue: 5500, profit: 1650 }
-  ];
-
-  // API CALL TODO: Replace with actual API endpoint
-  // GET /api/analytics/top-products?startDate=${dateRange.startDate}&endDate=${dateRange.endDate}
-  const topProductsData = [
-    { name: 'Coca Cola 500ml', sales: 150, revenue: 375 },
-    { name: 'Bread Loaf', sales: 120, revenue: 240 },
-    { name: 'Milk 1L', sales: 100, revenue: 350 },
-    { name: 'Rice 2kg', sales: 80, revenue: 480 },
-    { name: 'Cooking Oil', sales: 70, revenue: 420 }
-  ];
-
-  // API CALL TODO: Replace with actual API endpoint
-  // GET /api/analytics/payment-methods?startDate=${dateRange.startDate}&endDate=${dateRange.endDate}
-  const paymentMethodsData = [
-    { name: 'Cash', value: 45, color: '#000000' },
-    { name: 'Card', value: 30, color: '#4B5563' },
-    { name: 'Mobile Money', value: 20, color: '#9CA3AF' },
-    { name: 'Bank Transfer', value: 5, color: '#D1D5DB' }
-  ];
-
-  // API CALL TODO: Replace with actual API endpoint
-  // GET /api/analytics/sales?startDate=${dateRange.startDate}&endDate=${dateRange.endDate}
-  const salesAnalytics = {
-    totalProductsSold: 150,
-    totalRevenue: 3750.00,
-    totalProfit: 1125.00,
-    topProducts: [
-      {
-        product: {
-          name: "Coca Cola 500ml",
-          pricing: { sellingPrice: 2.50 }
-        },
-        totalQuantitySold: 50,
-        totalRevenue: 125.00,
-        totalProfit: 35.00,
-        salesCount: 25
-      },
-      {
-        product: {
-          name: "Bread Loaf",
-          pricing: { sellingPrice: 2.00 }
-        },
-        totalQuantitySold: 40,
-        totalRevenue: 80.00,
-        totalProfit: 20.00,
-        salesCount: 20
+  const fetchRevenueData = async () => {
+    try {
+      const { startDate, endDate } = dateRange;
+      const response = await fetch(
+        `${API_BASE_URL}/api/analytics/revenue?startDate=${startDate}&endDate=${endDate}&shopId=${shopId}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      const data = await response.json();
+      if (data.success) {
+        setRevenueData(data.data);
       }
-    ]
+    } catch (error) {
+      toast.error('Failed to load revenue data');
+    }
   };
 
-  // API CALL TODO: Replace with actual API endpoint
-  // GET /api/reports/daily?date=${selectedDate}
-  const dailyReportData = {
-    date: selectedDate,
-    totalSales: 25,
-    totalRevenue: 625.00,
-    totalProfit: 187.50,
-    totalCustomers: 20,
-    topSellingProduct: "Coca Cola 500ml",
-    paymentBreakdown: {
-      cash: 400.00,
-      card: 150.00,
-      mobileMoney: 75.00
+  const fetchTopProductsData = async () => {
+    try {
+      const { startDate, endDate } = dateRange;
+      const response = await fetch(
+        `${API_BASE_URL}/api/analytics/top-products?startDate=${startDate}&endDate=${endDate}&shopId=${shopId}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      const data = await response.json();
+      if (data.success) {
+        setTopProductsData(data.data);
+      }
+    } catch (error) {
+      toast.error('Failed to load top products data');
+    }
+  };
+
+  const fetchPaymentMethodsData = async () => {
+    try {
+      const { startDate, endDate } = dateRange;
+      const response = await fetch(
+        `${API_BASE_URL}/api/analytics/payment-methods?startDate=${startDate}&endDate=${endDate}&shopId=${shopId}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      const data = await response.json();
+      if (data.success) {
+        setPaymentMethodsData(data.data);
+      }
+    } catch (error) {
+      toast.error('Failed to load payment methods data');
+    }
+  };
+
+  const fetchSalesAnalytics = async () => {
+    try {
+      const { startDate, endDate } = dateRange;
+      const response = await fetch(
+        `${API_BASE_URL}/api/analytics/sales?startDate=${startDate}&endDate=${endDate}&shopId=${shopId}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      const data = await response.json();
+      if (data.success) {
+        setSalesAnalytics(data.data);
+      }
+    } catch (error) {
+      toast.error('Failed to load sales analytics');
+    }
+  };
+
+  const fetchDailyReportData = async () => {
+    try {
+      const response = await fetch(
+        `${API_BASE_URL}/api/reports/daily?date=${selectedDate}&shopId=${shopId}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      const data = await response.json();
+      if (data.success) {
+        setDailyReportData(data.data);
+      }
+    } catch (error) {
+      toast.error('Failed to load daily report');
+    }
+  };
+
+  const fetchShops = async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/shops`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const data = await response.json();
+      if (data.success) {
+        setShops(data.data);
+      }
+    } catch (error) {
+      toast.error('Failed to load shops');
+    }
+  };
+
+  const fetchUsers = async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/users`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const data = await response.json();
+      if (data.success) {
+        setUsers(data.data);
+      }
+    } catch (error) {
+      toast.error('Failed to load users');
     }
   };
 
   // Export functions
-  // API CALL TODO: POST /api/exports/pdf with data payload
-  const exportToPDF = (data, filename) => {
-    console.log(`Exporting ${filename} to PDF:`, data);
-    alert(`${filename} exported to PDF successfully!`);
+  const exportToPDF = async (data, filename) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/exports/pdf`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({ data, filename })
+      });
+      
+      if (response.ok) {
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${filename}.pdf`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        toast.success('Exported to PDF successfully');
+      } else {
+        toast.error('Failed to export to PDF');
+      }
+    } catch (error) {
+      toast.error('Failed to export to PDF');
+    }
   };
 
-  // API CALL TODO: POST /api/exports/excel with data payload
-  const exportToExcel = (data, filename) => {
-    console.log(`Exporting ${filename} to Excel:`, data);
-    alert(`${filename} exported to Excel successfully!`);
+  const exportToExcel = async (data, filename) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/exports/excel`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({ data, filename })
+      });
+      
+      if (response.ok) {
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${filename}.xlsx`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        toast.success('Exported to Excel successfully');
+      } else {
+        toast.error('Failed to export to Excel');
+      }
+    } catch (error) {
+      toast.error('Failed to export to Excel');
+    }
   };
 
-  // API CALL TODO: POST /api/exports/word with data payload
-  const exportToWord = (data, filename) => {
-    console.log(`Exporting ${filename} to Word:`, data);
-    alert(`${filename} exported to Word successfully!`);
+  const exportToWord = async (data, filename) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/exports/word`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({ data, filename })
+      });
+      
+      if (response.ok) {
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${filename}.docx`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        toast.success('Exported to Word successfully');
+      } else {
+        toast.error('Failed to export to Word');
+      }
+    } catch (error) {
+      toast.error('Failed to export to Word');
+    }
   };
 
   const printReport = (data) => {
     console.log('Printing report:', data);
     window.print();
+  };
+
+  // Cross-shop transaction functions
+  const handleCrossShopSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/cross-shop-transactions`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify(crossShopData)
+      });
+      
+      const data = await response.json();
+      if (data.success) {
+        toast.success('Cross-shop transaction created successfully');
+        setIsCrossShopModalOpen(false);
+        setCrossShopData({
+          fromShop: '',
+          toShop: '',
+          user: '',
+          transactionType: 'payment',
+          amount: 0,
+          description: ''
+        });
+      } else {
+        toast.error(data.message || 'Failed to create transaction');
+      }
+    } catch (error) {
+      toast.error('Failed to create transaction');
+    }
+  };
+
+  const handleCrossShopChange = (e) => {
+    const { name, value } = e.target;
+    setCrossShopData(prev => ({
+      ...prev,
+      [name]: name === 'amount' ? parseFloat(value) : value
+    }));
+  };
+
+  // Execute daily tasks
+  const executeDailyTasks = async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/tasks/daily`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      const data = await response.json();
+      if (data.success) {
+        toast.success(data.message);
+        // Refresh data
+        fetchDashboardData();
+        fetchRevenueData();
+        fetchTopProductsData();
+        fetchPaymentMethodsData();
+        fetchSalesAnalytics();
+        fetchDailyReportData();
+      } else {
+        toast.error(data.message || 'Failed to execute tasks');
+      }
+    } catch (error) {
+      toast.error('Failed to execute daily tasks');
+    }
   };
 
   const ExportButtons = ({ data, filename }) => (
@@ -166,6 +407,7 @@ const AnalyticsDashboard = () => {
     </div>
   );
 
+  // Tab components
   const AnalyticsDashboardTab = () => (
     <div className="space-y-4 sm:space-y-6">
       {/* Header */}
@@ -199,44 +441,44 @@ const AnalyticsDashboard = () => {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-xs sm:text-sm text-gray-600">Total Revenue</p>
-              <p className="text-lg sm:text-2xl font-bold text-black">₵28,000</p>
+              <p className="text-lg sm:text-2xl font-bold text-black">₵{dashboardData.todayStats.revenue.toFixed(2)}</p>
             </div>
             <DollarSign className="w-6 h-6 sm:w-8 sm:h-8 text-green-600" />
           </div>
-          <p className="text-xs sm:text-sm text-green-600 mt-2">↗ +12% from last month</p>
+          <p className="text-xs sm:text-sm text-green-600 mt-2">Today's Revenue</p>
         </div>
 
         <div className="bg-white p-3 sm:p-6 rounded-lg border border-gray-200 shadow-sm">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-xs sm:text-sm text-gray-600">Total Sales</p>
-              <p className="text-lg sm:text-2xl font-bold text-black">520</p>
+              <p className="text-lg sm:text-2xl font-bold text-black">{dashboardData.todayStats.transactions}</p>
             </div>
             <ShoppingCart className="w-6 h-6 sm:w-8 sm:h-8 text-blue-600" />
           </div>
-          <p className="text-xs sm:text-sm text-blue-600 mt-2">↗ +8% from last month</p>
+          <p className="text-xs sm:text-sm text-blue-600 mt-2">Today's Transactions</p>
         </div>
 
         <div className="bg-white p-3 sm:p-6 rounded-lg border border-gray-200 shadow-sm">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-xs sm:text-sm text-gray-600">Customers</p>
-              <p className="text-lg sm:text-2xl font-bold text-black">1,240</p>
+              <p className="text-lg sm:text-2xl font-bold text-black">{dashboardData.customers.totalCustomers}</p>
             </div>
             <Users className="w-6 h-6 sm:w-8 sm:h-8 text-purple-600" />
           </div>
-          <p className="text-xs sm:text-sm text-purple-600 mt-2">↗ +15% from last month</p>
+          <p className="text-xs sm:text-sm text-purple-600 mt-2">Total Customers</p>
         </div>
 
         <div className="bg-white p-3 sm:p-6 rounded-lg border border-gray-200 shadow-sm">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-xs sm:text-sm text-gray-600">Avg Order Value</p>
-              <p className="text-lg sm:text-2xl font-bold text-black">₵53.85</p>
+              <p className="text-lg sm:text-2xl font-bold text-black">₵{dashboardData.todayStats.averageOrderValue.toFixed(2)}</p>
             </div>
             <TrendingUp className="w-6 h-6 sm:w-8 sm:h-8 text-orange-600" />
           </div>
-          <p className="text-xs sm:text-sm text-orange-600 mt-2">↗ +5% from last month</p>
+          <p className="text-xs sm:text-sm text-orange-600 mt-2">Today's Average</p>
         </div>
       </div>
 
@@ -467,35 +709,159 @@ const AnalyticsDashboard = () => {
     </div>
   );
 
+  // Cross-Shop Transaction Modal
+  const CrossShopModal = () => (
+    <Modal isOpen={isCrossShopModalOpen} onClose={() => setIsCrossShopModalOpen(false)} title="Create Cross-Shop Transaction">
+      <form onSubmit={handleCrossShopSubmit} className="space-y-4">
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">From Shop</label>
+          <select
+            name="fromShop"
+            value={crossShopData.fromShop}
+            onChange={handleCrossShopChange}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-black"
+            required
+          >
+            <option value="">Select Shop</option>
+            {shops.map(shop => (
+              <option key={shop._id} value={shop._id}>{shop.name}</option>
+            ))}
+          </select>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">To Shop</label>
+          <select
+            name="toShop"
+            value={crossShopData.toShop}
+            onChange={handleCrossShopChange}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-black"
+            required
+          >
+            <option value="">Select Shop</option>
+            {shops.map(shop => (
+              <option key={shop._id} value={shop._id}>{shop.name}</option>
+            ))}
+          </select>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">User</label>
+          <select
+            name="user"
+            value={crossShopData.user}
+            onChange={handleCrossShopChange}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-black"
+            required
+          >
+            <option value="">Select User</option>
+            {users.map(user => (
+              <option key={user._id} value={user._id}>{user.name}</option>
+            ))}
+          </select>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Transaction Type</label>
+          <select
+            name="transactionType"
+            value={crossShopData.transactionType}
+            onChange={handleCrossShopChange}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-black"
+            required
+          >
+            <option value="payment">Payment</option>
+            <option value="transfer">Transfer</option>
+            <option value="adjustment">Adjustment</option>
+          </select>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Amount (₵)</label>
+          <input
+            type="number"
+            name="amount"
+            value={crossShopData.amount}
+            onChange={handleCrossShopChange}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-black"
+            required
+            min="0"
+            step="0.01"
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+          <textarea
+            name="description"
+            value={crossShopData.description}
+            onChange={handleCrossShopChange}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-black"
+            required
+          />
+        </div>
+
+        <div className="flex justify-end gap-3">
+          <button
+            type="button"
+            onClick={() => setIsCrossShopModalOpen(false)}
+            className="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400"
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            className="px-4 py-2 bg-black text-white rounded-md hover:bg-gray-800"
+          >
+            Create Transaction
+          </button>
+        </div>
+      </form>
+    </Modal>
+  );
+
   return (
     <div className="min-h-screen bg-gray-50">
-     
-        {/* Sidebar - Fixed positioning with proper z-index */}
-              <div className={`fixed left-0 top-0 h-full z-40 transition-all duration-300 ${sidebarOpen ? 'w-64' : 'w-20'} ${sidebarOpen ? 'block' : 'hidden lg:block'}`}>
-                <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
-              </div>
-              
-              {/* Main content area - Adjusted for sidebar */}
-              <div className={`flex-1 transition-all duration-300 ${sidebarOpen ? 'lg:ml-64' : 'lg:ml-20'}`}>
-                {/* Navbar - Fixed at top with proper z-index */}
-                <div className={`fixed top-0 right-0 z-30 transition-all duration-300 ${sidebarOpen ? 'lg:left-64' : 'lg:left-20'} left-0`}>
-                  <Navbar 
-                    onMenuClick={() => setSidebarOpen(!sidebarOpen)} 
-                    title={ 'Dashboard'}
-                  /> 
-                </div>
+      <div className={`fixed left-0 top-0 h-full z-40 transition-all duration-300 ${sidebarOpen ? 'w-64' : 'w-20'} ${sidebarOpen ? 'block' : 'hidden lg:block'}`}>
+        <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+      </div>
+      
+      <div className={`flex-1 transition-all duration-300 ${sidebarOpen ? 'lg:ml-64' : 'lg:ml-20'}`}>
+        <div className={`fixed top-0 right-0 z-30 transition-all duration-300 ${sidebarOpen ? 'lg:left-64' : 'lg:left-20'} left-0`}>
+          <Navbar 
+            onMenuClick={() => setSidebarOpen(!sidebarOpen)} 
+            title={'Analytics & Reports'}
+          /> 
+        </div>
 
-      {/* Main Content with proper margin for sidebar and mobile responsiveness */}
-    
-        {/* Tab Navigation */}
         <div className="bg-white border-b border-gray-200 px-3 sm:px-6 pt-16 lg:pt-4">
-          <div className="flex items-center space-x-3 sm:space-x-4 mb-4">
-            <div className="w-8 h-8 sm:w-10 sm:h-10 bg-black rounded-lg flex items-center justify-center">
-              <BarChart3 className="w-4 h-4 sm:w-6 sm:h-6 text-white" />
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center space-x-3 sm:space-x-4">
+              <div className="w-8 h-8 sm:w-10 sm:h-10 bg-black rounded-lg flex items-center justify-center">
+                <BarChart3 className="w-4 h-4 sm:w-6 sm:h-6 text-white" />
+              </div>
+              <div>
+                <h1 className="text-lg sm:text-xl font-bold text-black">Analytics & Reports</h1>
+                <p className="text-xs sm:text-sm text-gray-600">Comprehensive business insights</p>
+              </div>
             </div>
-            <div>
-              <h1 className="text-lg sm:text-xl font-bold text-black">Analytics & Reports</h1>
-              <p className="text-xs sm:text-sm text-gray-600">Comprehensive business insights</p>
+            
+            <div className="flex items-center gap-3">
+              <button
+                onClick={executeDailyTasks}
+                className="flex items-center gap-2 bg-green-600 text-white px-3 py-2 rounded-lg hover:bg-green-700 transition-colors text-xs sm:text-sm"
+              >
+                <Calendar className="w-4 h-4" />
+                <span className="hidden sm:inline">Run Daily Tasks</span>
+              </button>
+              
+              <button
+                onClick={() => setIsCrossShopModalOpen(true)}
+                className="flex items-center gap-2 bg-blue-600 text-white px-3 py-2 rounded-lg hover:bg-blue-700 transition-colors text-xs sm:text-sm"
+              >
+                <Plus className="w-4 h-4" />
+                <span className="hidden sm:inline">Cross-Shop Transaction</span>
+              </button>
             </div>
           </div>
           
@@ -535,7 +901,6 @@ const AnalyticsDashboard = () => {
           </div>
         </div>
 
-        {/* Main Content */}
         <div className="p-3 sm:p-6">
           {activeTab === 'dashboard' && <AnalyticsDashboardTab />}
           {activeTab === 'sales' && <SalesAnalyticsTab />}
@@ -543,15 +908,14 @@ const AnalyticsDashboard = () => {
         </div>
       </div>
 
-   
-      {/* Use your existing ChatBot component */}
+      <CrossShopModal />
+      
       <ChatBot 
         dashboardData={dashboardData}
         isVisible={isChatBotVisible}
         onClose={() => setIsChatBotVisible(false)}
       />
 
-      {/* Floating Chat Button - Responsive positioning */}
       <button
         onClick={() => setIsChatBotVisible(true)}
         className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 w-12 h-12 sm:w-14 sm:h-14 bg-black rounded-full flex items-center justify-center shadow-lg hover:bg-gray-800 transition-colors z-30"

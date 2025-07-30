@@ -10,6 +10,7 @@ import {
   Bot
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { toast } from 'react-toastify';
 
 // Import existing components
 import Navbar from '../components/Navbar';
@@ -26,71 +27,8 @@ import {
   ProductDetails 
 } from '../components/Product';
 
-// API Functions
-const getProductByQR = async (qrCode) => {
-  try {
-    // API Call: GET /api/products/qr/{qrCode}
-    // Purpose: Fetch product details by QR code
-    // Headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer <token>' }
-    const response = await fetch(`/api/products/qr/${qrCode}`);
-    if (!response.ok) throw new Error('Product not found');
-    return await response.json();
-  } catch (error) {
-    throw new Error('Failed to fetch product');
-  }
-};
-
-const deleteProduct = async (productId) => {
-  try {
-    // API Call: DELETE /api/products/{productId}
-    // Purpose: Delete a product by ID
-    // Headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer <token>' }
-    const response = await fetch(`/api/products/${productId}`, {
-      method: 'DELETE'
-    });
-    if (!response.ok) throw new Error('Failed to delete product');
-    return await response.json();
-  } catch (error) {
-    throw new Error('Failed to delete product');
-  }
-};
-
-// Additional API calls that should be implemented:
-/*
-const fetchProducts = async () => {
-  // API Call: GET /api/products
-  // Purpose: Fetch all products with pagination and filters
-  // Query params: ?page=1&limit=20&category=&search=&lowStock=false&active=true
-  // Headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer <token>' }
-};
-
-const fetchCategories = async () => {
-  // API Call: GET /api/categories
-  // Purpose: Fetch all product categories
-  // Headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer <token>' }
-};
-
-const createProduct = async (productData) => {
-  // API Call: POST /api/products
-  // Purpose: Create a new product
-  // Body: { name, sku, barcode, categoryId, pricing, stock, images, isActive }
-  // Headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer <token>' }
-};
-
-const updateProduct = async (productId, productData) => {
-  // API Call: PUT /api/products/{productId}
-  // Purpose: Update an existing product
-  // Body: { name, sku, barcode, categoryId, pricing, stock, images, isActive }
-  // Headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer <token>' }
-};
-
-const updateProductStock = async (productId, stockData) => {
-  // API Call: PATCH /api/products/{productId}/stock
-  // Purpose: Update product stock levels
-  // Body: { currentQuantity, minQuantity }
-  // Headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer <token>' }
-};
-*/
+// API base URL
+const API_BASE = 'https://retail360-backend.vercel.app';
 
 const Products = () => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -109,6 +47,176 @@ const Products = () => {
     inactive: false,
     search: ''
   });
+  const [isLoading, setIsLoading] = useState(false);
+
+  // Get user data from localStorage
+  const userData = JSON.parse(localStorage.getItem('userData'));
+  const shopId = userData?.currentShop?._id;
+  const authToken = localStorage.getItem('authToken');
+
+  // API Functions
+  const fetchProducts = async () => {
+    if (!shopId) {
+      toast.error('No shop selected');
+      return [];
+    }
+
+    try {
+      setIsLoading(true);
+      let url = `${API_BASE}/api/products/shop/${shopId}?`;
+      
+      // Add query parameters based on filters
+      if (filters.search) url += `search=${filters.search}&`;
+      if (filters.lowStock) url += `lowStock=true&`;
+      if (filters.category) url += `category=${filters.category}&`;
+      if (!filters.active && filters.inactive) url += `active=false&`;
+      
+      const response = await fetch(url, {
+        headers: {
+          'Authorization': `Bearer ${authToken}`
+        }
+      });
+      
+      if (!response.ok) throw new Error('Failed to fetch products');
+      
+      const data = await response.json();
+      return data.data || [];
+    } catch (error) {
+      setError('Failed to load products. Please try again.');
+      return [];
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const fetchCategories = async () => {
+    if (!shopId) {
+      toast.error('No shop selected');
+      return [];
+    }
+
+    try {
+      const response = await fetch(`${API_BASE}/api/categories?shopId=${shopId}`, {
+        headers: {
+          'Authorization': `Bearer ${authToken}`
+        }
+      });
+      
+      if (!response.ok) throw new Error('Failed to fetch categories');
+      
+      const data = await response.json();
+      return data.data || [];
+    } catch (error) {
+      setError('Failed to load categories. Please try again.');
+      return [];
+    }
+  };
+
+  const createProduct = async (productData) => {
+    if (!shopId) {
+      toast.error('No shop selected');
+      return null;
+    }
+
+    try {
+      setIsLoading(true);
+      const response = await fetch(`${API_BASE}/api/products`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${authToken}`
+        },
+        body: JSON.stringify({
+          ...productData,
+          shopId
+        })
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to create product');
+      }
+      
+      const data = await response.json();
+      return data.data;
+    } catch (error) {
+      setError(error.message || 'Failed to create product');
+      return null;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const updateProduct = async (productId, productData) => {
+    try {
+      setIsLoading(true);
+      const response = await fetch(`${API_BASE}/api/products/${productId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${authToken}`
+        },
+        body: JSON.stringify(productData)
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to update product');
+      }
+      
+      const data = await response.json();
+      return data.data;
+    } catch (error) {
+      setError(error.message || 'Failed to update product');
+      return null;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const getProductByQR = async (qrCode) => {
+    try {
+      const response = await fetch(`${API_BASE}/api/products/qr/${qrCode}?shopId=${shopId}`, {
+        headers: {
+          'Authorization': `Bearer ${authToken}`
+        }
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to fetch product');
+      }
+      
+      const data = await response.json();
+      return data.data;
+    } catch (error) {
+      throw new Error(error.message || 'Failed to fetch product');
+    }
+  };
+
+  const deleteProduct = async (productId) => {
+    try {
+      setIsLoading(true);
+      const response = await fetch(`${API_BASE}/api/products/${productId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${authToken}`
+        }
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to delete product');
+      }
+      
+      const data = await response.json();
+      return data.data;
+    } catch (error) {
+      throw new Error(error.message || 'Failed to delete product');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   // Mock dashboard data for ChatBot
   const dashboardData = {
@@ -141,121 +249,33 @@ const Products = () => {
     }
   };
 
-  // Effect to load products
+  // Effect to load products and categories
   useEffect(() => {
     const fetchData = async () => {
+      if (!shopId) {
+        setError('No shop selected. Please select a shop first.');
+        return;
+      }
+
       try {
-        // In real implementation, replace with actual API calls:
-        // const categoriesData = await fetchCategories();
-        // const productsData = await fetchProducts();
+        setIsLoading(true);
+        const [categoriesData, productsData] = await Promise.all([
+          fetchCategories(),
+          fetchProducts()
+        ]);
         
-        const mockCategories = [
-          { id: 'cat_123', name: 'Beverages' },
-          { id: 'cat_124', name: 'Bakery' },
-          { id: 'cat_125', name: 'Snacks' },
-          { id: 'cat_126', name: 'Dairy' }
-        ];
-
-        const mockProducts = [
-          {
-            id: "prod_123",
-            name: "Coca Cola 500ml",
-            sku: "CC500ML",
-            barcode: "1234567890123",
-            category: {
-              id: "cat_123",
-              name: "Beverages"
-            },
-            pricing: {
-              costPrice: 1.80,
-              sellingPrice: 2.50,
-              currency: "GHS"
-            },
-            stock: {
-              currentQuantity: 5,
-              minQuantity: 10
-            },
-            images: ["https://placeholder.co/400"],
-            isActive: true
-          },
-          {
-            id: "prod_124",
-            name: "Bread Loaf",
-            sku: "BREAD001",
-            barcode: "1234567890124",
-            category: {
-              id: "cat_124",
-              name: "Bakery"
-            },
-            pricing: {
-              costPrice: 1.20,
-              sellingPrice: 1.80,
-              currency: "GHS"
-            },
-            stock: {
-              currentQuantity: 15,
-              minQuantity: 5
-            },
-            images: ["https://placeholder.co/400"],
-            isActive: true
-          },
-          {
-            id: "prod_125",
-            name: "Milk 1L",
-            sku: "MILK001",
-            barcode: "1234567890125",
-            category: {
-              id: "cat_126",
-              name: "Dairy"
-            },
-            pricing: {
-              costPrice: 2.50,
-              sellingPrice: 3.20,
-              currency: "GHS"
-            },
-            stock: {
-              currentQuantity: 3,
-              minQuantity: 10
-            },
-            images: ["https://placeholder.co/400"],
-            isActive: false
-          },
-          {
-            id: "prod_126",
-            name: "Potato Chips",
-            sku: "CHIPS001",
-            barcode: "1234567890126",
-            category: {
-              id: "cat_125",
-              name: "Snacks"
-            },
-            pricing: {
-              costPrice: 0.80,
-              sellingPrice: 1.20,
-              currency: "GHS"
-            },
-            stock: {
-              currentQuantity: 25,
-              minQuantity: 15
-            },
-            images: ["https://placeholder.co/400"],
-            isActive: true
-          }
-        ];
-
-        // Simulate API delay
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        setCategories(mockCategories);
-        setProducts(mockProducts);
-
+        setCategories(categoriesData);
+        setProducts(productsData);
+        setError(null);
       } catch (err) {
-        setError('Failed to load products. Please try again.');
-      
+        setError('Failed to load data. Please try again.');
+      } finally {
+        setIsLoading(false);
       }
     };
 
     fetchData();
-  }, []);
+  }, [shopId, filters]);
 
   // Filter products based on current filters
   const filteredProducts = products.filter(product => {
@@ -264,11 +284,11 @@ const Products = () => {
       return false;
     }
     // Apply category filter
-    if (filters.category && product.category.id !== filters.category) {
+    if (filters.category && product.category?._id !== filters.category) {
       return false;
     }
     // Apply low stock filter
-    if (filters.lowStock && product.stock.currentQuantity > product.stock.minQuantity) {
+    if (filters.lowStock && product.stock?.currentQuantity > product.stock?.minQuantity) {
       return false;
     }
     // Apply active/inactive filters
@@ -283,6 +303,40 @@ const Products = () => {
     }
     return true;
   });
+
+  const handleCreateProduct = async (productData) => {
+    const newProduct = await createProduct(productData);
+    if (newProduct) {
+      setProducts([...products, newProduct]);
+      toast.success('Product created successfully');
+      return true;
+    }
+    return false;
+  };
+
+  const handleUpdateProduct = async (productId, productData) => {
+    const updatedProduct = await updateProduct(productId, productData);
+    if (updatedProduct) {
+      setProducts(products.map(p => 
+        p._id === productId ? updatedProduct : p
+      ));
+      toast.success('Product updated successfully');
+      return true;
+    }
+    return false;
+  };
+
+  const handleDeleteProduct = async (productId) => {
+    try {
+      await deleteProduct(productId);
+      setProducts(products.filter(p => p._id !== productId));
+      toast.success('Product deleted successfully');
+      return true;
+    } catch (error) {
+      toast.error(error.message || 'Failed to delete product');
+      return false;
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -339,7 +393,7 @@ const Products = () => {
                     <div>
                       <p className="text-xs sm:text-sm text-orange-600 font-medium">Low Stock</p>
                       <p className="text-xl sm:text-2xl font-bold text-orange-900">
-                        {products.filter(p => p.stock.currentQuantity <= p.stock.minQuantity).length}
+                        {products.filter(p => p.stock?.currentQuantity <= p.stock?.minQuantity).length}
                       </p>
                     </div>
                     <div className="w-10 h-10 sm:w-12 sm:h-12 bg-orange-100 rounded-lg flex items-center justify-center">
@@ -424,11 +478,17 @@ const Products = () => {
                 </div>
               </div>
             )}
+
+            {isLoading && (
+              <div className="flex justify-center py-4">
+                <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
+              </div>
+            )}
           </div>
 
           {/* Products Grid - Responsive grid columns */}
           <div className="mt-6 sm:mt-8">
-            {filteredProducts.length === 0 ? (
+            {!isLoading && filteredProducts.length === 0 ? (
               <div className="text-center py-12 sm:py-16">
                 <div className="bg-white border border-gray-200 rounded-lg p-8 sm:p-12 max-w-md mx-auto shadow-sm">
                   <div className="w-16 h-16 sm:w-20 sm:h-20 bg-gray-100 rounded-lg flex items-center justify-center mx-auto mb-4 sm:mb-6">
@@ -436,13 +496,19 @@ const Products = () => {
                   </div>
                   <h3 className="text-lg sm:text-xl font-semibold text-gray-900 mb-2">No products found</h3>
                   <p className="text-sm sm:text-base text-gray-600">Try adjusting your search or filters</p>
+                  <button
+                    onClick={() => setShowAddProductPopup(true)}
+                    className="mt-4 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+                  >
+                    Add Product
+                  </button>
                 </div>
               </div>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
                 {filteredProducts.map((product) => (
                   <ProductCard 
-                    key={product.id} 
+                    key={product._id} 
                     product={product}
                     onClick={() => setSelectedProduct(product)}
                   />
@@ -489,11 +555,15 @@ const Products = () => {
         filters={filters}
         onFilterChange={handleFilterChange}
         categories={categories}
+        isLoading={isLoading}
       />
       
       <AddProductPopup
         isOpen={showAddProductPopup}
         onClose={() => setShowAddProductPopup(false)}
+        onCreate={handleCreateProduct}
+        categories={categories}
+        isLoading={isLoading}
       />
 
       {/* QR Scanner */}
@@ -518,19 +588,19 @@ const Products = () => {
         <ProductDetails
           product={selectedProduct}
           onClose={() => setSelectedProduct(null)}
-          onEdit={() => {
-            setSelectedProduct(null);
-            setShowAddProductPopup(true);
-          }}
-          onDelete={async (productId) => {
-            try {
-              await deleteProduct(productId);
-              setProducts(products.filter(p => p.id !== productId));
+          onEdit={async (updatedProduct) => {
+            const success = await handleUpdateProduct(selectedProduct._id, updatedProduct);
+            if (success) {
               setSelectedProduct(null);
-            } catch (error) {
-              setError('Failed to delete product. Please try again.');
             }
           }}
+          onDelete={async () => {
+            const success = await handleDeleteProduct(selectedProduct._id);
+            if (success) {
+              setSelectedProduct(null);
+            }
+          }}
+          isLoading={isLoading}
         />
       )}
     </div>

@@ -35,19 +35,24 @@ const TypewriterText = ({ text, speed = 5, onComplete }) => {
 };
 
 // Axios service for AFIA AI API
+// Updated Axios service for AFIA AI API
 const afiaApiService = {
-  async sendMessage(question, systemPrompt = null) {
+  async sendMessage(question) {
     try {
+      // Retrieve user data from localStorage
+      const userData = JSON.parse(localStorage.getItem('userData') || '{}');
+      const token = localStorage.getItem('authToken');
+
       const response = await fetch('https://retail360-backend.vercel.app/api/afia/chat', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          // Add authorization header if needed
-          // 'Authorization': `Bearer ${token}`,
+          'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({
-          question,
-          systemPrompt
+          userQuestion: question,  // Changed from 'question' to 'userQuestion'
+          userId: userData.id || null,
+          shopId: userData.currentShop || null
         })
       });
 
@@ -64,7 +69,6 @@ const afiaApiService = {
     }
   }
 };
-
 const ChatBot = ({ dashboardData, isVisible, onClose }) => {
   const [messages, setMessages] = useState([]);
   const [inputMessage, setInputMessage] = useState('');
@@ -385,3 +389,4 @@ const ChatBot = ({ dashboardData, isVisible, onClose }) => {
 };
 
 export default ChatBot;
+
