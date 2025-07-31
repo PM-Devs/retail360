@@ -7,246 +7,27 @@ import ChatBot from '../components/ChatBot.jsx';
 // API Base URL
 const API_BASE = 'https://retail360-backend.vercel.app';
 
-const Retail360CustomerApp = () => {
-  const [currentPage, setCurrentPage] = useState('customers');
-  const [searchQuery, setSearchQuery] = useState('');
-  const [selectedCustomer, setSelectedCustomer] = useState(null);
-  const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [chatBotVisible, setChatBotVisible] = useState(false);
-  const [customers, setCustomers] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
-  const [showEditModal, setShowEditModal] = useState(false);
-  const [showPointsModal, setShowPointsModal] = useState(false);
-  const [pointsAction, setPointsAction] = useState('add'); // 'add' or 'redeem'
-  const [success, setSuccess] = useState(null);
+// Notification Component
+const Notification = ({ type, message, onClose }) => (
+  <div className={`fixed top-20 right-4 z-50 p-4 rounded-lg shadow-lg flex items-center gap-3 ${
+    type === 'success' ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200'
+  }`}>
+    {type === 'success' ? (
+      <Check className="text-green-600" size={20} />
+    ) : (
+      <AlertCircle className="text-red-600" size={20} />
+    )}
+    <span className={`text-sm font-medium ${type === 'success' ? 'text-green-800' : 'text-red-800'}`}>
+      {message}
+    </span>
+    <button onClick={onClose} className="ml-2">
+      <X size={16} className={type === 'success' ? 'text-green-600' : 'text-red-600'} />
+    </button>
+  </div>
+);
 
-  // Get user data from localStorage
-  const getUserData = () => {
-    try {
-      const userData = localStorage.getItem('userData');
-      return userData ? JSON.parse(userData) : null;
-    } catch (error) {
-      console.error('Error parsing user data:', error);
-      return null;
-    }
-  };
-
-  const getAuthToken = () => localStorage.getItem('authToken');
-
-  const getCurrentShopId = () => {
-    const userData = getUserData();
-    return userData?.currentShop;
-  };
-
-  // Form states
-  const [customerForm, setCustomerForm] = useState({
-    name: '',
-    phone: '',
-    email: '',
-    address: { city: '', street: '', region: '' },
-    loyaltyPoints: 0
-  });
-  const [editForm, setEditForm] = useState({});
-  const [pointsForm, setPointsForm] = useState({ points: 0, totalSpent: 0 });
-
-  // Dashboard data for chatbot
-  const dashboardData = {
-    todayStats: {
-      revenue: 1250.50,
-      transactions: 28,
-      averageOrderValue: 44.66
-    },
-    customers: {
-      totalCustomers: customers.length
-    },
-    inventory: {
-      lowStockCount: 3,
-      lowStockProducts: [
-        { name: 'iPhone Cases' },
-        { name: 'Wireless Chargers' }
-      ]
-    }
-  };
-
-  // API Functions
-  const apiCall = async (endpoint, options = {}) => {
-    try {
-      const token = getAuthToken();
-      const response = await fetch(`${API_BASE}${endpoint}`, {
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': token ? `Bearer ${token}` : '',
-          ...options.headers
-        },
-        ...options
-      });
-      
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      
-      const data = await response.json();
-      return data;
-    } catch (error) {
-      console.error('API call failed:', error);
-      throw error;
-    }
-  };
-
-  // Customer API functions
-  const fetchCustomers = async (search = '') => {
-    setLoading(true);
-    setError(null);
-    try {
-      const shopId = getCurrentShopId();
-      if (!shopId) {
-        throw new Error('No shop selected');
-      }
-
-      const searchParam = search ? `?search=${encodeURIComponent(search)}` : '';
-      const data = await apiCall(`/api/customers/shop/${shopId}${searchParam}`);
-      setCustomers(data.data || []);
-    } catch (error) {
-      setError('Failed to fetch customers');
-      console.error('Error fetching customers:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const searchCustomerByPhone = async (phone) => {
-    setLoading(true);
-    try {
-      const shopId = getCurrentShopId();
-      if (!shopId) {
-        throw new Error('No shop selected');
-      }
-
-      const data = await apiCall(`/api/customers/phone/${encodeURIComponent(phone)}?shopId=${shopId}`);
-      return data.data;
-    } catch (error) {
-      console.error('Error searching customer by phone:', error);
-      return null;
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const createCustomer = async (customerData) => {
-    setLoading(true);
-    setError(null);
-    try {
-      const shopId = getCurrentShopId();
-      if (!shopId) {
-        throw new Error('No shop selected');
-      }
-
-      const data = await apiCall('/api/customers', {
-        method: 'POST',
-        body: JSON.stringify({
-          ...customerData,
-          shopId
-        })
-      });
-
-      setSuccess('Customer created successfully!');
-      setTimeout(() => setSuccess(null), 3000);
-      
-      // Reset form
-      setCustomerForm({
-        name: '',
-        phone: '',
-        email: '',
-        address: { city: '', street: '', region: '' },
-        loyaltyPoints: 0
-      });
-      
-      // Refresh customers list
-      fetchCustomers();
-      setCurrentPage('customers');
-      
-      return data.data;
-    } catch (error) {
-      setError('Failed to create customer');
-      console.error('Error creating customer:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const updateCustomer = async (customerId, updateData) => {
-    setLoading(true);
-    setError(null);
-    try {
-      const data = await apiCall(`/api/customers/${customerId}`, {
-        method: 'PUT',
-        body: JSON.stringify(updateData)
-      });
-
-      setSuccess('Customer updated successfully!');
-      setTimeout(() => setSuccess(null), 3000);
-      
-      // Update selected customer if it's the one being edited
-      if (selectedCustomer && selectedCustomer._id === customerId) {
-        setSelectedCustomer({ ...selectedCustomer, ...data.data });
-      }
-      
-      // Refresh customers list
-      fetchCustomers();
-      setShowEditModal(false);
-      
-      return data.data;
-    } catch (error) {
-      setError('Failed to update customer');
-      console.error('Error updating customer:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const updateCustomerLoyalty = async (customerId, loyaltyData) => {
-    setLoading(true);
-    setError(null);
-    try {
-      const data = await apiCall(`/api/customers/${customerId}/loyalty`, {
-        method: 'POST',
-        body: JSON.stringify(loyaltyData)
-      });
-
-      setSuccess(`Loyalty points ${pointsAction === 'add' ? 'added' : 'redeemed'} successfully!`);
-      setTimeout(() => setSuccess(null), 3000);
-      
-      // Update selected customer
-      if (selectedCustomer && selectedCustomer._id === customerId) {
-        setSelectedCustomer({ ...selectedCustomer, loyalty: data.data.loyalty });
-      }
-      
-      // Refresh customers list
-      fetchCustomers();
-      setShowPointsModal(false);
-      setPointsForm({ points: 0, totalSpent: 0 });
-      
-      return data.data;
-    } catch (error) {
-      setError(`Failed to ${pointsAction} loyalty points`);
-      console.error('Error updating loyalty:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Load customers on component mount
-  useEffect(() => {
-    fetchCustomers();
-  }, []);
-
-  // Filter customers based on search query
-  const filteredCustomers = customers.filter(customer =>
-    customer.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    customer.phone?.includes(searchQuery)
-  );
-
+// Customer Card Component
+const CustomerCard = ({ customer, onClick }) => {
   const getTierColor = (tier) => {
     switch(tier?.toLowerCase()) {
       case 'gold': return 'bg-yellow-100 text-yellow-800';
@@ -256,155 +37,7 @@ const Retail360CustomerApp = () => {
     }
   };
 
-  // Notification Component
-  const Notification = ({ type, message, onClose }) => (
-    <div className={`fixed top-20 right-4 z-50 p-4 rounded-lg shadow-lg flex items-center gap-3 ${
-      type === 'success' ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200'
-    }`}>
-      {type === 'success' ? (
-        <Check className="text-green-600" size={20} />
-      ) : (
-        <AlertCircle className="text-red-600" size={20} />
-      )}
-      <span className={`text-sm font-medium ${type === 'success' ? 'text-green-800' : 'text-red-800'}`}>
-        {message}
-      </span>
-      <button onClick={onClose} className="ml-2">
-        <X size={16} className={type === 'success' ? 'text-green-600' : 'text-red-600'} />
-      </button>
-    </div>
-  );
-
-  // Edit Customer Modal
-  const EditCustomerModal = () => (
-    <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
-        <div className="p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold">Edit Customer</h3>
-            <button onClick={() => setShowEditModal(false)}>
-              <X size={20} className="text-gray-500" />
-            </button>
-          </div>
-          
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Name</label>
-              <input
-                type="text"
-                value={editForm.name || ''}
-                onChange={(e) => setEditForm({...editForm, name: e.target.value})}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
-            </div>
-            
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
-              <input
-                type="email"
-                value={editForm.email || ''}
-                onChange={(e) => setEditForm({...editForm, email: e.target.value})}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
-            </div>
-            
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">City</label>
-              <input
-                type="text"
-                value={editForm.address?.city || ''}
-                onChange={(e) => setEditForm({
-                  ...editForm, 
-                  address: { ...editForm.address, city: e.target.value }
-                })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
-            </div>
-          </div>
-          
-          <div className="flex gap-3 mt-6">
-            <button
-              onClick={() => setShowEditModal(false)}
-              className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
-            >
-              Cancel
-            </button>
-            <button
-              onClick={() => updateCustomer(selectedCustomer._id, editForm)}
-              disabled={loading}
-              className="flex-1 px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-800 disabled:opacity-50"
-            >
-              {loading ? <Loader className="animate-spin mx-auto" size={16} /> : 'Save'}
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-
-  // Points Modal
-  const PointsModal = () => (
-    <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-xl max-w-md w-full">
-        <div className="p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold">
-              {pointsAction === 'add' ? 'Add' : 'Redeem'} Loyalty Points
-            </h3>
-            <button onClick={() => setShowPointsModal(false)}>
-              <X size={20} className="text-gray-500" />
-            </button>
-          </div>
-          
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Points</label>
-              <input
-                type="number"
-                value={pointsForm.points}
-                onChange={(e) => setPointsForm({...pointsForm, points: parseInt(e.target.value) || 0})}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                min="0"
-              />
-            </div>
-            
-            {pointsAction === 'add' && (
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Total Spent (GHS)</label>
-                <input
-                  type="number"
-                  step="0.01"
-                  value={pointsForm.totalSpent}
-                  onChange={(e) => setPointsForm({...pointsForm, totalSpent: parseFloat(e.target.value) || 0})}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  min="0"
-                />
-              </div>
-            )}
-          </div>
-          
-          <div className="flex gap-3 mt-6">
-            <button
-              onClick={() => setShowPointsModal(false)}
-              className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
-            >
-              Cancel
-            </button>
-            <button
-              onClick={() => updateCustomerLoyalty(selectedCustomer._id, pointsForm)}
-              disabled={loading || pointsForm.points <= 0}
-              className="flex-1 px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-800 disabled:opacity-50"
-            >
-              {loading ? <Loader className="animate-spin mx-auto" size={16} /> : 
-                (pointsAction === 'add' ? 'Add Points' : 'Redeem Points')}
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-
-  const CustomerCard = ({ customer, onClick }) => (
+  return (
     <div 
       className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6 hover:shadow-md transition-shadow cursor-pointer"
       onClick={() => onClick(customer)}
@@ -444,154 +77,326 @@ const Retail360CustomerApp = () => {
       </div>
     </div>
   );
+};
 
-  const CustomersListPage = () => (
-    <div className="p-4 sm:p-6">
-      <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 mb-6">
-        <div className="flex-1 relative">
-          <Search size={18} className="sm:hidden absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-          <Search size={20} className="hidden sm:block absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-          <input
-            type="text"
-            placeholder="Search customers by name or phone..."
-            value={searchQuery}
-            onChange={(e) => {
-              setSearchQuery(e.target.value);
-              if (e.target.value) {
-                fetchCustomers(e.target.value);
-              } else {
-                fetchCustomers();
-              }
-            }}
-            className="w-full pl-10 pr-4 py-2.5 sm:py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base"
-          />
+// Edit Customer Modal
+const EditCustomerModal = ({ selectedCustomer, editForm, setEditForm, setShowEditModal, updateCustomer, loading }) => (
+  <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+    <div className="bg-white rounded-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
+      <div className="p-6">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-semibold">Edit Customer</h3>
+          <button onClick={() => setShowEditModal(false)}>
+            <X size={20} className="text-gray-500" />
+          </button>
         </div>
-        <button 
-          onClick={() => setCurrentPage('search')}
-          className="px-4 sm:px-6 py-2.5 sm:py-3 bg-gray-600 text-white rounded-xl hover:bg-gray-700 transition-colors font-medium text-sm sm:text-base whitespace-nowrap"
-        >
-          Phone Search
-        </button>
-      </div>
-
-      {loading && (
-        <div className="flex justify-center items-center py-8">
-          <Loader className="animate-spin" size={32} />
-        </div>
-      )}
-
-      {!loading && (
-        <div className="grid gap-3 sm:gap-4">
-          {filteredCustomers.map(customer => (
-            <CustomerCard 
-              key={customer._id} 
-              customer={customer} 
-              onClick={(customer) => {
-                setSelectedCustomer(customer);
-                setCurrentPage('details');
-              }}
-            />
-          ))}
-          {filteredCustomers.length === 0 && (
-            <div className="text-center py-8 text-gray-500">
-              No customers found
-            </div>
-          )}
-        </div>
-      )}
-
-      <button
-        onClick={() => setCurrentPage('add')}
-        className="fixed bottom-20 sm:bottom-6 right-4 sm:right-6 w-12 h-12 sm:w-14 sm:h-14 bg-black text-white rounded-full shadow-lg hover:bg-gray-800 transition-colors flex items-center justify-center z-20"
-      >
-        <Plus size={20} className="sm:hidden" />
-        <Plus size={24} className="hidden sm:block" />
-      </button>
-    </div>
-  );
-
-  const AddCustomerPage = () => (
-    <div className="p-4 sm:p-6">
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6">
-        <div className="space-y-4 sm:space-y-6">
+        
+        <div className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Full Name *
-            </label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Name</label>
             <input
               type="text"
-              value={customerForm.name}
-              onChange={(e) => setCustomerForm({...customerForm, name: e.target.value})}
-              className="w-full px-4 py-2.5 sm:py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base"
-              placeholder="Enter customer name"
-              required
+              value={editForm.name || ''}
+              onChange={(e) => setEditForm({...editForm, name: e.target.value})}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
           </div>
-
+          
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Phone Number *
-            </label>
-            <input
-              type="tel"
-              value={customerForm.phone}
-              onChange={(e) => setCustomerForm({...customerForm, phone: e.target.value})}
-              className="w-full px-4 py-2.5 sm:py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base"
-              placeholder="+233XXXXXXXXX"
-              required
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Email Address
-            </label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
             <input
               type="email"
-              value={customerForm.email}
-              onChange={(e) => setCustomerForm({...customerForm, email: e.target.value})}
-              className="w-full px-4 py-2.5 sm:py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base"
-              placeholder="customer@example.com"
+              value={editForm.email || ''}
+              onChange={(e) => setEditForm({...editForm, email: e.target.value})}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
           </div>
-
+          
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              City
-            </label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">City</label>
             <input
               type="text"
-              value={customerForm.address.city}
-              onChange={(e) => setCustomerForm({
-                ...customerForm, 
-                address: { ...customerForm.address, city: e.target.value }
+              value={editForm.address?.city || ''}
+              onChange={(e) => setEditForm({
+                ...editForm, 
+                address: { ...editForm.address, city: e.target.value }
               })}
-              className="w-full px-4 py-2.5 sm:py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base"
-              placeholder="Enter city"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
           </div>
         </div>
-
-        <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 mt-6 sm:mt-8">
+        
+        <div className="flex gap-3 mt-6">
           <button
-            onClick={() => setCurrentPage('customers')}
-            className="flex-1 px-6 py-2.5 sm:py-3 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition-colors font-medium text-sm sm:text-base"
+            onClick={() => setShowEditModal(false)}
+            className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
           >
             Cancel
           </button>
           <button
-            onClick={() => createCustomer(customerForm)}
-            disabled={loading || !customerForm.name || !customerForm.phone}
-            className="flex-1 px-6 py-2.5 sm:py-3 bg-black text-white rounded-xl hover:bg-gray-800 transition-colors font-medium text-sm sm:text-base disabled:opacity-50"
+            onClick={() => updateCustomer(selectedCustomer._id, editForm)}
+            disabled={loading}
+            className="flex-1 px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-800 disabled:opacity-50"
           >
-            {loading ? <Loader className="animate-spin mx-auto" size={16} /> : 'Save Customer'}
+            {loading ? <Loader className="animate-spin mx-auto" size={16} /> : 'Save'}
           </button>
         </div>
       </div>
     </div>
-  );
+  </div>
+);
 
-  const CustomerDetailsPage = () => (
+// Points Modal
+const PointsModal = ({ 
+  selectedCustomer, 
+  pointsAction, 
+  pointsForm, 
+  setPointsForm, 
+  setShowPointsModal, 
+  updateCustomerLoyalty, 
+  loading 
+}) => (
+  <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+    <div className="bg-white rounded-xl max-w-md w-full">
+      <div className="p-6">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-semibold">
+            {pointsAction === 'add' ? 'Add' : 'Redeem'} Loyalty Points
+          </h3>
+          <button onClick={() => setShowPointsModal(false)}>
+            <X size={20} className="text-gray-500" />
+          </button>
+        </div>
+        
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Points</label>
+            <input
+              type="number"
+              value={pointsForm.points}
+              onChange={(e) => setPointsForm({...pointsForm, points: parseInt(e.target.value) || 0})}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              min="0"
+            />
+          </div>
+          
+          {pointsAction === 'add' && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Total Spent (GHS)</label>
+              <input
+                type="number"
+                step="0.01"
+                value={pointsForm.totalSpent}
+                onChange={(e) => setPointsForm({...pointsForm, totalSpent: parseFloat(e.target.value) || 0})}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                min="0"
+              />
+            </div>
+          )}
+        </div>
+        
+        <div className="flex gap-3 mt-6">
+          <button
+            onClick={() => setShowPointsModal(false)}
+            className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={() => updateCustomerLoyalty(selectedCustomer._id, pointsForm)}
+            disabled={loading || pointsForm.points <= 0}
+            className="flex-1 px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-800 disabled:opacity-50"
+          >
+            {loading ? <Loader className="animate-spin mx-auto" size={16} /> : 
+              (pointsAction === 'add' ? 'Add Points' : 'Redeem Points')}
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+);
+
+// Customers List Page
+const CustomersListPage = ({ 
+  searchQuery, 
+  setSearchQuery, 
+  fetchCustomers, 
+  setCurrentPage, 
+  loading, 
+  filteredCustomers, 
+  setSelectedCustomer 
+}) => (
+  <div className="p-4 sm:p-6">
+    <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 mb-6">
+      <div className="flex-1 relative">
+        <Search size={18} className="sm:hidden absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+        <Search size={20} className="hidden sm:block absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+        <input
+          type="text"
+          placeholder="Search customers by name or phone..."
+          value={searchQuery}
+          onChange={(e) => {
+            setSearchQuery(e.target.value);
+            if (e.target.value) {
+              fetchCustomers(e.target.value);
+            } else {
+              fetchCustomers();
+            }
+          }}
+          className="w-full pl-10 pr-4 py-2.5 sm:py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base"
+        />
+      </div>
+      <button 
+        onClick={() => setCurrentPage('search')}
+        className="px-4 sm:px-6 py-2.5 sm:py-3 bg-gray-600 text-white rounded-xl hover:bg-gray-700 transition-colors font-medium text-sm sm:text-base whitespace-nowrap"
+      >
+        Phone Search
+      </button>
+    </div>
+
+    {loading && (
+      <div className="flex justify-center items-center py-8">
+        <Loader className="animate-spin" size={32} />
+      </div>
+    )}
+
+    {!loading && (
+      <div className="grid gap-3 sm:gap-4">
+        {filteredCustomers.map(customer => (
+          <CustomerCard 
+            key={customer._id} 
+            customer={customer} 
+            onClick={(customer) => {
+              setSelectedCustomer(customer);
+              setCurrentPage('details');
+            }}
+          />
+        ))}
+        {filteredCustomers.length === 0 && (
+          <div className="text-center py-8 text-gray-500">
+            {searchQuery ? 'No customers found matching your search' : 'No customers found'}
+          </div>
+        )}
+      </div>
+    )}
+
+    <button
+      onClick={() => setCurrentPage('add')}
+      className="fixed bottom-20 sm:bottom-6 right-4 sm:right-6 w-12 h-12 sm:w-14 sm:h-14 bg-black text-white rounded-full shadow-lg hover:bg-gray-800 transition-colors flex items-center justify-center z-20"
+    >
+      <Plus size={20} className="sm:hidden" />
+      <Plus size={24} className="hidden sm:block" />
+    </button>
+  </div>
+);
+
+// Add Customer Page
+const AddCustomerPage = ({ 
+  customerForm, 
+  setCustomerForm, 
+  setCurrentPage, 
+  createCustomer, 
+  loading 
+}) => (
+  <div className="p-4 sm:p-6">
+    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6">
+      <div className="space-y-4 sm:space-y-6">
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Full Name *
+          </label>
+          <input
+            type="text"
+            value={customerForm.name}
+            onChange={(e) => setCustomerForm({...customerForm, name: e.target.value})}
+            className="w-full px-4 py-2.5 sm:py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base"
+            placeholder="Enter customer name"
+            required
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Phone Number *
+          </label>
+          <input
+            type="tel"
+            value={customerForm.phone}
+            onChange={(e) => setCustomerForm({...customerForm, phone: e.target.value})}
+            className="w-full px-4 py-2.5 sm:py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base"
+            placeholder="+233XXXXXXXXX"
+            required
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Email Address
+          </label>
+          <input
+            type="email"
+            value={customerForm.email}
+            onChange={(e) => setCustomerForm({...customerForm, email: e.target.value})}
+            className="w-full px-4 py-2.5 sm:py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base"
+            placeholder="customer@example.com"
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            City
+          </label>
+          <input
+            type="text"
+            value={customerForm.address.city}
+            onChange={(e) => setCustomerForm({
+              ...customerForm, 
+              address: { ...customerForm.address, city: e.target.value }
+            })}
+            className="w-full px-4 py-2.5 sm:py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base"
+            placeholder="Enter city"
+          />
+        </div>
+      </div>
+
+      <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 mt-6 sm:mt-8">
+        <button
+          onClick={() => setCurrentPage('customers')}
+          className="flex-1 px-6 py-2.5 sm:py-3 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition-colors font-medium text-sm sm:text-base"
+        >
+          Cancel
+        </button>
+        <button
+          onClick={() => createCustomer(customerForm)}
+          disabled={loading || !customerForm.name || !customerForm.phone}
+          className="flex-1 px-6 py-2.5 sm:py-3 bg-black text-white rounded-xl hover:bg-gray-800 transition-colors font-medium text-sm sm:text-base disabled:opacity-50"
+        >
+          {loading ? <Loader className="animate-spin mx-auto" size={16} /> : 'Save Customer'}
+        </button>
+      </div>
+    </div>
+  </div>
+);
+
+// Customer Details Page
+const CustomerDetailsPage = ({ 
+  selectedCustomer, 
+  setEditForm, 
+  setShowEditModal, 
+  setPointsAction, 
+  setPointsForm, 
+  setShowPointsModal 
+}) => {
+  const getTierColor = (tier) => {
+    switch(tier?.toLowerCase()) {
+      case 'gold': return 'bg-yellow-100 text-yellow-800';
+      case 'silver': return 'bg-gray-100 text-gray-800';
+      case 'bronze': return 'bg-orange-100 text-orange-800';
+      default: return 'bg-blue-100 text-blue-800';
+    }
+  };
+
+  return (
     <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
       {/* Customer Info Card */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6">
@@ -700,87 +505,379 @@ const Retail360CustomerApp = () => {
       </div>
     </div>
   );
+};
 
-  const CustomerSearchPage = () => {
-    const [phoneSearch, setPhoneSearch] = useState('');
-    const [searchResult, setSearchResult] = useState(null);
-    const [searching, setSearching] = useState(false);
+// Customer Search Page
+const CustomerSearchPage = ({ 
+  searchCustomerByPhone, 
+  setCustomerForm, 
+  customerForm, 
+  setCurrentPage, 
+  setSelectedCustomer 
+}) => {
+  const [phoneSearch, setPhoneSearch] = useState('');
+  const [searchResult, setSearchResult] = useState(null);
+  const [searching, setSearching] = useState(false);
 
-    const handleSearch = async () => {
-      if (!phoneSearch.trim()) return;
-      
-      setSearching(true);
-      const customer = await searchCustomerByPhone(phoneSearch);
-      setSearchResult(customer || false);
-      setSearching(false);
-    };
-
-    return (
-      <div className="p-4 sm:p-6">
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6 mb-4 sm:mb-6">
-          <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-4">Search by Phone Number</h3>
-          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
-            <input
-              type="tel"
-              value={phoneSearch}
-              onChange={(e) => setPhoneSearch(e.target.value)}
-              placeholder="+233XXXXXXXXX"
-              className="flex-1 px-4 py-2.5 sm:py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base"
-              onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
-            />
-            <button
-              onClick={handleSearch}
-              disabled={searching || !phoneSearch.trim()}
-              className="px-6 py-2.5 sm:py-3 bg-black text-white rounded-xl hover:bg-gray-800 transition-colors font-medium text-sm sm:text-base whitespace-nowrap disabled:opacity-50"
-            >
-              {searching ? <Loader className="animate-spin mx-auto" size={16} /> : 'Search'}
-            </button>
-          </div>
-        </div>
-
-        {searchResult === null && (
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 sm:p-8 text-center">
-            <Phone size={40} className="sm:hidden text-gray-400 mx-auto mb-4" />
-            <Phone size={48} className="hidden sm:block text-gray-400 mx-auto mb-4" />
-            <p className="text-sm sm:text-base text-gray-600">Enter a phone number to search for customers</p>
-          </div>
-        )}
-
-        {searchResult === false && (
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6">
-            <div className="text-center mb-4">
-              <User size={40} className="sm:hidden text-gray-400 mx-auto mb-4" />
-              <User size={48} className="hidden sm:block text-gray-400 mx-auto mb-4" />
-              <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-2">Customer Not Found</h3>
-              <p className="text-sm sm:text-base text-gray-600 mb-4">No customer found with phone number: {phoneSearch}</p>
-            </div>
-            <button
-              onClick={() => {
-                setCustomerForm({...customerForm, phone: phoneSearch});
-                setCurrentPage('add');
-              }}
-              className="w-full px-6 py-2.5 sm:py-3 bg-black text-white rounded-xl hover:bg-gray-800 transition-colors font-medium text-sm sm:text-base"
-            >
-              Add New Customer
-            </button>
-          </div>
-        )}
-
-        {searchResult && searchResult !== false && (
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6">
-            <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-4">Customer Found</h3>
-            <CustomerCard 
-              customer={searchResult} 
-              onClick={(customer) => {
-                setSelectedCustomer(customer);
-                setCurrentPage('details');
-              }}
-            />
-          </div>
-        )}
-      </div>
-    );
+  const handleSearch = async () => {
+    if (!phoneSearch.trim()) return;
+    
+    setSearching(true);
+    const customer = await searchCustomerByPhone(phoneSearch);
+    setSearchResult(customer || false);
+    setSearching(false);
   };
+
+  return (
+    <div className="p-4 sm:p-6">
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6 mb-4 sm:mb-6">
+        <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-4">Search by Phone Number</h3>
+        <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
+          <input
+            type="tel"
+            value={phoneSearch}
+            onChange={(e) => setPhoneSearch(e.target.value)}
+            placeholder="+233XXXXXXXXX"
+            className="flex-1 px-4 py-2.5 sm:py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base"
+            onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
+          />
+          <button
+            onClick={handleSearch}
+            disabled={searching || !phoneSearch.trim()}
+            className="px-6 py-2.5 sm:py-3 bg-black text-white rounded-xl hover:bg-gray-800 transition-colors font-medium text-sm sm:text-base whitespace-nowrap disabled:opacity-50"
+          >
+            {searching ? <Loader className="animate-spin mx-auto" size={16} /> : 'Search'}
+          </button>
+        </div>
+      </div>
+
+      {searchResult === null && (
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 sm:p-8 text-center">
+          <Phone size={40} className="sm:hidden text-gray-400 mx-auto mb-4" />
+          <Phone size={48} className="hidden sm:block text-gray-400 mx-auto mb-4" />
+          <p className="text-sm sm:text-base text-gray-600">Enter a phone number to search for customers</p>
+        </div>
+      )}
+
+      {searchResult === false && (
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6">
+          <div className="text-center mb-4">
+            <User size={40} className="sm:hidden text-gray-400 mx-auto mb-4" />
+            <User size={48} className="hidden sm:block text-gray-400 mx-auto mb-4" />
+            <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-2">Customer Not Found</h3>
+            <p className="text-sm sm:text-base text-gray-600 mb-4">No customer found with phone number: {phoneSearch}</p>
+          </div>
+          <button
+            onClick={() => {
+              setCustomerForm({...customerForm, phone: phoneSearch});
+              setCurrentPage('add');
+            }}
+            className="w-full px-6 py-2.5 sm:py-3 bg-black text-white rounded-xl hover:bg-gray-800 transition-colors font-medium text-sm sm:text-base"
+          >
+            Add New Customer
+          </button>
+        </div>
+      )}
+
+      {searchResult && searchResult !== false && (
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6">
+          <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-4">Customer Found</h3>
+          <CustomerCard 
+            customer={searchResult} 
+            onClick={(customer) => {
+              setSelectedCustomer(customer);
+              setCurrentPage('details');
+            }}
+          />
+        </div>
+      )}
+    </div>
+  );
+};
+
+// Main Component
+const Retail360CustomerApp = () => {
+  const [currentPage, setCurrentPage] = useState('customers');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedCustomer, setSelectedCustomer] = useState(null);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [chatBotVisible, setChatBotVisible] = useState(false);
+  const [customers, setCustomers] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [showPointsModal, setShowPointsModal] = useState(false);
+  const [pointsAction, setPointsAction] = useState('add'); // 'add' or 'redeem'
+  const [success, setSuccess] = useState(null);
+
+  // Get user data from localStorage
+  const getUserData = () => {
+    try {
+      const userData = localStorage.getItem('userData');
+      return userData ? JSON.parse(userData) : null;
+    } catch (error) {
+      console.error('Error parsing user data:', error);
+      return null;
+    }
+  };
+
+  const getAuthToken = () => localStorage.getItem('authToken');
+
+  // Fixed function to get current shop ID
+  const getCurrentShopId = () => {
+    const userData = getUserData();
+    // Handle both cases: currentShop as object or as ID string
+    if (userData?.currentShop) {
+      return typeof userData.currentShop === 'object' 
+        ? userData.currentShop._id 
+        : userData.currentShop;
+    }
+    return null;
+  };
+
+  // Form states
+  const [customerForm, setCustomerForm] = useState({
+    name: '',
+    phone: '',
+    email: '',
+    address: { city: '', street: '', region: '' },
+    loyaltyPoints: 0
+  });
+  const [editForm, setEditForm] = useState({});
+  const [pointsForm, setPointsForm] = useState({ points: 0, totalSpent: 0 });
+
+  // Dashboard data for chatbot
+  const dashboardData = {
+    todayStats: {
+      revenue: 1250.50,
+      transactions: 28,
+      averageOrderValue: 44.66
+    },
+    customers: {
+      totalCustomers: customers.length
+    },
+    inventory: {
+      lowStockCount: 3,
+      lowStockProducts: [
+        { name: 'iPhone Cases' },
+        { name: 'Wireless Chargers' }
+      ]
+    }
+  };
+
+  // API Functions
+  const apiCall = async (endpoint, options = {}) => {
+    try {
+      const token = getAuthToken();
+      const response = await fetch(`${API_BASE}${endpoint}`, {
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': token ? `Bearer ${token}` : '',
+          ...options.headers
+        },
+        ...options
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      console.error('API call failed:', error);
+      throw error;
+    }
+  };
+
+  // Customer API functions
+  const fetchCustomers = async (search = '') => {
+    setLoading(true);
+    setError(null);
+    try {
+      const shopId = getCurrentShopId();
+      if (!shopId) {
+        throw new Error('No shop selected. Please check your login status.');
+      }
+
+      const searchParam = search ? `?search=${encodeURIComponent(search)}` : '';
+      const data = await apiCall(`/api/customers/shop/${shopId}${searchParam}`);
+      
+      // Handle different response structures
+      const customersList = data.customers || data.data || data || [];
+      setCustomers(Array.isArray(customersList) ? customersList : []);
+    } catch (error) {
+      setError(`Failed to fetch customers: ${error.message}`);
+      console.error('Error fetching customers:', error);
+      setCustomers([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const searchCustomerByPhone = async (phone) => {
+    setLoading(true);
+    try {
+      const shopId = getCurrentShopId();
+      if (!shopId) {
+        throw new Error('No shop selected');
+      }
+
+      const data = await apiCall(`/api/customers/phone/${encodeURIComponent(phone)}?shopId=${shopId}`);
+      return data.customer || data.data || null;
+    } catch (error) {
+      console.error('Error searching customer by phone:', error);
+      return null;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const createCustomer = async (customerData) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const shopId = getCurrentShopId();
+      if (!shopId) {
+        throw new Error('No shop selected');
+      }
+
+      // Validate required fields
+      if (!customerData.name?.trim()) {
+        throw new Error('Customer name is required');
+      }
+      if (!customerData.phone?.trim()) {
+        throw new Error('Customer phone is required');
+      }
+
+      const data = await apiCall('/api/customers', {
+        method: 'POST',
+        body: JSON.stringify({
+          ...customerData,
+          shopId,
+          // Ensure address is properly structured
+          address: {
+            city: customerData.address?.city || '',
+            street: customerData.address?.street || '',
+            region: customerData.address?.region || ''
+          }
+        })
+      });
+
+      setSuccess('Customer created successfully!');
+      setTimeout(() => setSuccess(null), 3000);
+      
+      // Reset form
+      setCustomerForm({
+        name: '',
+        phone: '',
+        email: '',
+        address: { city: '', street: '', region: '' },
+        loyaltyPoints: 0
+      });
+      
+      // Refresh customers list
+      fetchCustomers();
+      setCurrentPage('customers');
+      
+      return data.customer || data.data;
+    } catch (error) {
+      setError(`Failed to create customer: ${error.message}`);
+      console.error('Error creating customer:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const updateCustomer = async (customerId, updateData) => {
+    setLoading(true);
+    setError(null);
+    try {
+      if (!customerId) {
+        throw new Error('Customer ID is required');
+      }
+
+      const data = await apiCall(`/api/customers/${customerId}`, {
+        method: 'PUT',
+        body: JSON.stringify(updateData)
+      });
+
+      setSuccess('Customer updated successfully!');
+      setTimeout(() => setSuccess(null), 3000);
+      
+      // Update selected customer if it's the one being edited
+      if (selectedCustomer && selectedCustomer._id === customerId) {
+        const updatedCustomer = data.customer || data.data || { ...selectedCustomer, ...updateData };
+        setSelectedCustomer(updatedCustomer);
+      }
+      
+      // Refresh customers list
+      fetchCustomers();
+      setShowEditModal(false);
+      
+      return data.customer || data.data;
+    } catch (error) {
+      setError(`Failed to update customer: ${error.message}`);
+      console.error('Error updating customer:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const updateCustomerLoyalty = async (customerId, loyaltyData) => {
+    setLoading(true);
+    setError(null);
+    try {
+      if (!customerId) {
+        throw new Error('Customer ID is required');
+      }
+
+      const data = await apiCall(`/api/customers/${customerId}/loyalty`, {
+        method: 'POST',
+        body: JSON.stringify({
+          action: pointsAction,
+          points: loyaltyData.points,
+          totalSpent: loyaltyData.totalSpent || 0
+        })
+      });
+
+      setSuccess(`Loyalty points ${pointsAction === 'add' ? 'added' : 'redeemed'} successfully!`);
+      setTimeout(() => setSuccess(null), 3000);
+      
+      // Update selected customer
+      if (selectedCustomer && selectedCustomer._id === customerId) {
+        const updatedLoyalty = data.loyalty || data.data?.loyalty;
+        setSelectedCustomer({ 
+          ...selectedCustomer, 
+          loyalty: updatedLoyalty || selectedCustomer.loyalty 
+        });
+      }
+      
+      // Refresh customers list
+      fetchCustomers();
+      setShowPointsModal(false);
+      setPointsForm({ points: 0, totalSpent: 0 });
+      
+      return data;
+    } catch (error) {
+      setError(`Failed to ${pointsAction} loyalty points: ${error.message}`);
+      console.error('Error updating loyalty:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Load customers on component mount
+  useEffect(() => {
+    fetchCustomers();
+  }, []);
+
+  // Filter customers based on search query
+  const filteredCustomers = customers.filter(customer =>
+    customer.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    customer.phone?.includes(searchQuery)
+  );
 
   const getPageTitle = () => {
     switch(currentPage) {
@@ -818,8 +915,27 @@ const Retail360CustomerApp = () => {
       )}
 
       {/* Modals */}
-      {showEditModal && <EditCustomerModal />}
-      {showPointsModal && <PointsModal />}
+      {showEditModal && (
+        <EditCustomerModal 
+          selectedCustomer={selectedCustomer}
+          editForm={editForm}
+          setEditForm={setEditForm}
+          setShowEditModal={setShowEditModal}
+          updateCustomer={updateCustomer}
+          loading={loading}
+        />
+      )}
+      {showPointsModal && (
+        <PointsModal 
+          selectedCustomer={selectedCustomer}
+          pointsAction={pointsAction}
+          pointsForm={pointsForm}
+          setPointsForm={setPointsForm}
+          setShowPointsModal={setShowPointsModal}
+          updateCustomerLoyalty={updateCustomerLoyalty}
+          loading={loading}
+        />
+      )}
 
       {/* Sidebar - Fixed positioning with proper z-index */}
       <div className={`fixed left-0 top-0 h-full z-40 transition-all duration-300 ${sidebarOpen ? 'w-64' : 'w-20'} ${sidebarOpen ? 'block' : 'hidden'} lg:block`}>
@@ -862,10 +978,48 @@ const Retail360CustomerApp = () => {
 
           {/* Page Content */}
           <div className="min-h-screen pb-20">
-            {currentPage === 'customers' && <CustomersListPage />}
-            {currentPage === 'add' && <AddCustomerPage />}
-            {currentPage === 'details' && <CustomerDetailsPage />}
-            {currentPage === 'search' && <CustomerSearchPage />}
+            {currentPage === 'customers' && (
+              <CustomersListPage 
+                searchQuery={searchQuery}
+                setSearchQuery={setSearchQuery}
+                fetchCustomers={fetchCustomers}
+                setCurrentPage={setCurrentPage}
+                loading={loading}
+                filteredCustomers={filteredCustomers}
+                setSelectedCustomer={setSelectedCustomer}
+              />
+            )}
+            
+            {currentPage === 'add' && (
+              <AddCustomerPage 
+                customerForm={customerForm}
+                setCustomerForm={setCustomerForm}
+                setCurrentPage={setCurrentPage}
+                createCustomer={createCustomer}
+                loading={loading}
+              />
+            )}
+            
+            {currentPage === 'details' && (
+              <CustomerDetailsPage 
+                selectedCustomer={selectedCustomer}
+                setEditForm={setEditForm}
+                setShowEditModal={setShowEditModal}
+                setPointsAction={setPointsAction}
+                setPointsForm={setPointsForm}
+                setShowPointsModal={setShowPointsModal}
+              />
+            )}
+            
+            {currentPage === 'search' && (
+              <CustomerSearchPage 
+                searchCustomerByPhone={searchCustomerByPhone}
+                setCustomerForm={setCustomerForm}
+                customerForm={customerForm}
+                setCurrentPage={setCurrentPage}
+                setSelectedCustomer={setSelectedCustomer}
+              />
+            )}
           </div>
         </div>
       </div>

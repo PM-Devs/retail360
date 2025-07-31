@@ -96,7 +96,7 @@ const Products = () => {
     }
 
     try {
-      const response = await fetch(`${API_BASE}/api/categories?shopId=${shopId}`, {
+      const response = await fetch(`${API_BASE}/api/categories/shop/${shopId}`, {
         headers: {
           'Authorization': `Bearer ${authToken}`
         }

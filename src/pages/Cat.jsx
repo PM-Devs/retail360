@@ -37,25 +37,54 @@ const CatPage = () => {
     isActive: true
   });
 
-  // Get current shop ID (in a real app, this would come from auth context)
-  const shopId = localStorage.getItem('currentShop') || '65d8f8a5b4d6f8a5b4d6f8a6';
+  // Get current shop ID from user data
+  const getCurrentShopId = () => {
+    try {
+      const userData = localStorage.getItem('userData');
+      if (userData) {
+        const parsedData = JSON.parse(userData);
+        return parsedData.currentShop?._id || null;
+      }
+      
+      // Fallback to old method if userData doesn't exist
+      return localStorage.getItem('currentShop');
+    } catch (error) {
+      console.error('Error parsing user data:', error);
+      return localStorage.getItem('currentShop');
+    }
+  };
+
+  const shopId = getCurrentShopId();
 
   // Fetch categories
   const fetchCategories = async () => {
     try {
       setLoading(true);
+      
+      if (!shopId) {
+        throw new Error('No shop selected');
+      }
+      
       const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('No authentication token found');
+      }
+      
       const response = await fetch(`${API_BASE_URL}/api/categories/shop/${shopId}`, {
         headers: {
-          'Authorization': `Bearer ${token}`
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
         }
       });
       
-      if (!response.ok) throw new Error('Failed to fetch categories');
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || `Failed to fetch categories: ${response.status}`);
+      }
       
       const data = await response.json();
-      setCategories(data.data);
-      setParentCategories(data.data.filter(cat => !cat.parentCategory));
+      setCategories(data.data || []);
+      setParentCategories((data.data || []).filter(cat => !cat.parentCategory));
     } catch (err) {
       setError(err.message);
       console.error('Error fetching categories:', err);
@@ -68,13 +97,21 @@ const CatPage = () => {
   const fetchCategory = async (categoryId) => {
     try {
       const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('No authentication token found');
+      }
+      
       const response = await fetch(`${API_BASE_URL}/api/categories/${categoryId}`, {
         headers: {
-          'Authorization': `Bearer ${token}`
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
         }
       });
       
-      if (!response.ok) throw new Error('Failed to fetch category');
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || 'Failed to fetch category');
+      }
       
       return await response.json();
     } catch (err) {
@@ -85,7 +122,12 @@ const CatPage = () => {
   };
 
   useEffect(() => {
-    fetchCategories();
+    if (shopId) {
+      fetchCategories();
+    } else {
+      setError('No shop selected. Please select a shop first.');
+      setLoading(false);
+    }
     
     // Responsive sidebar
     const handleResize = () => {
@@ -95,11 +137,11 @@ const CatPage = () => {
     handleResize();
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
-  }, []);
+  }, [shopId]);
 
   // Filter categories based on search
   const filteredCategories = categories.filter(category =>
-    category.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    category.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     (category.description && category.description.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
@@ -128,13 +170,13 @@ const CatPage = () => {
   const handleEditCategory = async (category) => {
     try {
       const categoryData = await fetchCategory(category._id);
-      if (categoryData) {
+      if (categoryData && categoryData.data) {
         setEditingCategory(categoryData.data);
         setFormData({
-          name: categoryData.data.name,
+          name: categoryData.data.name || '',
           description: categoryData.data.description || '',
           parentCategory: categoryData.data.parentCategory?._id || '',
-          isActive: categoryData.data.isActive
+          isActive: categoryData.data.isActive !== undefined ? categoryData.data.isActive : true
         });
         setShowAddCategory(true);
       }
@@ -147,16 +189,25 @@ const CatPage = () => {
   // Save category (create or update)
   const handleSaveCategory = async () => {
     try {
+      if (!formData.name.trim()) {
+        setError('Category name is required');
+        return;
+      }
+      
       const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('No authentication token found');
+      }
+      
       const method = editingCategory ? 'PUT' : 'POST';
       const url = editingCategory 
         ? `${API_BASE_URL}/api/categories/${editingCategory._id}`
         : `${API_BASE_URL}/api/categories`;
       
-      const body = JSON.stringify({
+      const requestBody = {
         ...formData,
-        shopId: editingCategory ? undefined : shopId
-      });
+        ...(editingCategory ? {} : { shopId })
+      };
       
       const response = await fetch(url, {
         method,
@@ -164,13 +215,17 @@ const CatPage = () => {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         },
-        body
+        body: JSON.stringify(requestBody)
       });
       
-      if (!response.ok) throw new Error('Failed to save category');
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || 'Failed to save category');
+      }
       
       fetchCategories(); // Refresh categories
       setShowAddCategory(false);
+      setError(null); // Clear any previous errors
     } catch (err) {
       setError(err.message);
       console.error('Error saving category:', err);
@@ -183,19 +238,28 @@ const CatPage = () => {
     
     try {
       const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('No authentication token found');
+      }
+      
       const response = await fetch(`${API_BASE_URL}/api/categories/${categoryId}`, {
         method: 'DELETE',
         headers: {
-          'Authorization': `Bearer ${token}`
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
         }
       });
       
-      if (!response.ok) throw new Error('Failed to delete category');
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || 'Failed to delete category');
+      }
       
       // Optimistic UI update
       setCategories(prev => 
         prev.filter(cat => cat._id !== categoryId)
       );
+      setError(null); // Clear any previous errors
     } catch (err) {
       setError(err.message);
       console.error('Error deleting category:', err);
@@ -302,7 +366,7 @@ const CatPage = () => {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <Package className="mx-auto h-12 w-12 text-gray-400" />
+          <Package className="mx-auto h-12 w-12 text-gray-400 animate-pulse" />
           <h3 className="mt-2 text-sm font-medium text-gray-900">Loading categories...</h3>
         </div>
       </div>
@@ -313,12 +377,15 @@ const CatPage = () => {
   if (error) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
+        <div className="text-center max-w-md mx-auto p-4">
           <Package className="mx-auto h-12 w-12 text-red-400" />
           <h3 className="mt-2 text-sm font-medium text-gray-900">Error loading categories</h3>
-          <p className="mt-1 text-sm text-gray-500">{error}</p>
+          <p className="mt-1 text-sm text-gray-500 break-words">{error}</p>
           <button
-            onClick={fetchCategories}
+            onClick={() => {
+              setError(null);
+              fetchCategories();
+            }}
             className="mt-4 bg-black hover:bg-gray-800 text-white px-4 py-2 rounded-lg transition-colors"
           >
             Retry
@@ -330,7 +397,7 @@ const CatPage = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-         {/* Sidebar - FIXED: Added mobile-friendly behavior */}
+      {/* Sidebar - FIXED: Added mobile-friendly behavior */}
       <div 
         className={`fixed left-0 top-0 h-full z-40 transition-all duration-300 ease-in-out transform ${
           sidebarOpen 
@@ -369,6 +436,28 @@ const CatPage = () => {
               <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">Categories</h1>
               <p className="text-sm sm:text-base text-gray-600">Manage your product categories and organize your inventory.</p>
             </div>
+
+            {/* Error Banner */}
+            {error && (
+              <div className="mb-4 bg-red-50 border border-red-200 rounded-lg p-4">
+                <div className="flex">
+                  <div className="flex-shrink-0">
+                    <Package className="h-5 w-5 text-red-400" />
+                  </div>
+                  <div className="ml-3">
+                    <p className="text-sm text-red-800">{error}</p>
+                  </div>
+                  <div className="ml-auto pl-3">
+                    <button
+                      onClick={() => setError(null)}
+                      className="text-red-400 hover:text-red-600"
+                    >
+                      ×
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* Controls */}
             <div className="flex flex-col space-y-3 sm:space-y-0 sm:flex-row sm:gap-4 mb-4 sm:mb-6">
@@ -443,7 +532,7 @@ const CatPage = () => {
             )}
 
             {/* Empty State */}
-            {filteredCategories.length === 0 && (
+            {filteredCategories.length === 0 && !error && (
               <div className="text-center py-8 sm:py-12">
                 <Package className="mx-auto h-10 w-10 sm:h-12 sm:w-12 text-gray-400" />
                 <h3 className="mt-2 text-sm font-medium text-gray-900">No categories found</h3>
@@ -556,7 +645,7 @@ const CatPage = () => {
               </button>
               <button
                 onClick={handleSaveCategory}
-                className="flex-1 px-4 py-2.5 sm:py-2 bg-black hover:bg-gray-800 text-white rounded-lg transition-colors text-sm sm:text-base"
+                className="flex-1 px-4 py-2.5 sm:py-2 bg-black hover:bg-gray-800 text-white rounded-lg transition-colors text-sm sm:text-base disabled:opacity-50 disabled:cursor-not-allowed"
                 disabled={!formData.name.trim()}
               >
                 {editingCategory ? 'Update' : 'Create'}

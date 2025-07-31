@@ -27,8 +27,27 @@ const StockAdjustment = () => {
     const fetchProducts = async () => {
       try {
         setProductsLoading(true);
-        const response = await axios.get(`${BASE_API}/api/products`);
-        setProducts(response.data || []);
+        
+        // Get shopId from localStorage
+        const userData = JSON.parse(localStorage.getItem('userData'));
+        if (!userData || !userData.currentShop || !userData.currentShop._id) {
+          throw new Error('Shop information not found');
+        }
+        const shopId = userData.currentShop._id;
+        
+        const response = await axios.get(`${BASE_API}/api/products/shop/${shopId}`);
+        // Access response.data.data instead of response.data
+        const productsData = response.data.data || [];
+        
+        // Map products to expected format
+        const mappedProducts = productsData.map(product => ({
+          ...product,
+          id: product._id,  // Use _id as id
+          currentStock: product.stock.currentQuantity, // Map stock.currentQuantity to currentStock
+          price: product.pricing.sellingPrice // Map pricing.sellingPrice to price
+        }));
+        
+        setProducts(mappedProducts);
         setError('');
       } catch (err) {
         console.error('Failed to fetch products:', err);
@@ -85,19 +104,28 @@ const StockAdjustment = () => {
     if (field === 'quantity') {
       // Ensure quantity is positive integer
       const numValue = parseInt(value);
-      if (!isNaN(numValue) && numValue > 0) {
-        setAdjustment(prev => ({ ...prev, [field]: numValue.toString() }));
-      } else if (value === '') {
+      if ( !isNaN(numValue) ){
+        setAdjustment(prev => ({ ...prev, [field]: Math.max(0, numValue).toString() })
+      );
+      }
+      
+      else if (numValue === '') {
         setAdjustment(prev => ({ ...prev, [field]: '' }));
       }
-    } else {
+    }
+    
+    
+    else {
       setAdjustment(prev => ({ ...prev, [field]: value }));
     }
   };
 
   const calculateNewStock = () => {
-    if (!selectedProduct || !adjustment.quantity) return selectedProduct?.currentStock || 0;
+    if (!selectedProduct || adjustment.quantity === '') return selectedProduct?.currentStock || 0;
+    
     const qty = parseInt(adjustment.quantity);
+    if (isNaN(qty)) return selectedProduct.currentStock;
+    
     return adjustment.type === 'increase' ? 
       selectedProduct.currentStock + qty : 
       Math.max(0, selectedProduct.currentStock - qty);
@@ -145,10 +173,23 @@ const StockAdjustment = () => {
           setSelectedProduct(null);
           setAdjustment({ quantity: '', type: 'increase', reason: '', notes: '' });
           
-          // Refresh product data
-          axios.get(`${BASE_API}/api/products`)
-            .then(res => setProducts(res.data || []))
-            .catch(console.error);
+          // Refresh product data with shopId from localStorage
+          const userData = JSON.parse(localStorage.getItem('userData'));
+          if (userData && userData.currentShop && userData.currentShop._id) {
+            const shopId = userData.currentShop._id;
+            axios.get(`${BASE_API}/api/products/shop/${shopId}`)
+              .then(res => {
+                // Map refreshed products to expected format
+                const refreshedProducts = (res.data.data || []).map(product => ({
+                  ...product,
+                  id: product._id,
+                  currentStock: product.stock.currentQuantity,
+                  price: product.pricing.sellingPrice
+                }));
+                setProducts(refreshedProducts);
+              })
+              .catch(console.error);
+          }
         }, 2000);
       }
     } catch (err) {
@@ -228,7 +269,7 @@ const StockAdjustment = () => {
                     placeholder="Search for a product..."
                     value={searchTerm}
                     onChange={e => setSearchTerm(e.target.value)}
-                    className="pl-10 pr-4 py-3 w-full border border-gray-300 rounded-lg focus:ring-2 focus:ring-black"
+                    className="pl-10 pr-4 py-3 w-full border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent"
                   />
                 </div>
                 
@@ -259,7 +300,7 @@ const StockAdjustment = () => {
                             <div>
                               <h3 className="font-semibold text-black">{product.name}</h3>
                               <p className="text-gray-600 text-sm">Current Stock: {product.currentStock}</p>
-                              <p className="text-gray-500 text-sm">${product.price.toFixed(2)}</p>
+                              <p className="text-gray-500 text-sm">GHs{product.price.toFixed(2)}</p>
                             </div>
                             <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center">
                               <Package className="w-4 h-4 text-gray-600" />
@@ -322,7 +363,7 @@ const StockAdjustment = () => {
 
                 <input
                   type="number"
-                  min="1"
+                  min="0"
                   step="1"
                   value={adjustment.quantity}
                   onChange={e => handleAdjustmentChange('quantity', e.target.value)}

@@ -13,12 +13,58 @@ const Dashboard = () => {
   const [showChatBot, setShowChatBot] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [hasShop, setHasShop] = useState(false);
   const navigate = useNavigate();
 
-  // Get current shop ID from user data
+  // Get current shop ID from user data with better error handling
   const getCurrentShopId = () => {
-    const userData = JSON.parse(localStorage.getItem('userData'));
-    return userData?.user?.currentShop || null;
+    try {
+      const userDataString = localStorage.getItem('userData');
+      console.log('Raw userData from localStorage:', userDataString);
+      
+      if (!userDataString) {
+        console.log('No userData found in localStorage');
+        return null;
+      }
+      
+      const userData = JSON.parse(userDataString);
+      console.log('Parsed userData:', userData);
+      
+      // Based on your actual data structure
+      const shopId = userData?.currentShop?._id || 
+                    userData?.currentShop?.shopId ||
+                    userData?.user?.currentShop?._id || 
+                    userData?.user?.currentShop?.shopId ||
+                    userData?.shopId ||
+                    null;
+      
+      console.log('Extracted shop ID:', shopId);
+      return shopId;
+    } catch (error) {
+      console.error('Error parsing userData:', error);
+      return null;
+    }
+  };
+
+  // Get authentication token
+  const getAuthToken = () => {
+    const token = localStorage.getItem('token') || localStorage.getItem('authToken');
+    console.log('Auth token available:', !!token);
+    return token;
+  };
+
+  // Get current shop details for additional context
+  const getCurrentShop = () => {
+    try {
+      const userDataString = localStorage.getItem('userData');
+      if (!userDataString) return null;
+      
+      const userData = JSON.parse(userDataString);
+      return userData?.currentShop || null;
+    } catch (error) {
+      console.error('Error getting current shop:', error);
+      return null;
+    }
   };
 
   // Initialize dashboard with default values
@@ -41,58 +87,86 @@ const Dashboard = () => {
     };
   };
 
-  // API call to get dashboard data
+  // API call to get dashboard data - Modified to make request regardless of shopId
   const getDashboardSummary = async (shopId) => {
     try {
-      // Only make API call if shop ID is available
-      if (!shopId) {
+      const token = getAuthToken();
+      if (!token) {
+        console.log('No auth token available, returning default dashboard');
         return initializeDashboard();
       }
 
-      const response = await fetch(`${API_BASE_URL}/api/dashboard/${shopId}`, {
+      // Construct URL - use shopId if available, otherwise make a general request
+      const url = shopId 
+        ? `${API_BASE_URL}/api/dashboard/${shopId}`
+        : `${API_BASE_URL}/api/dashboard`;
+
+      console.log('Making dashboard request to:', url);
+
+      const response = await fetch(url, {
         method: 'GET',
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         }
       });
 
+      console.log('Dashboard response status:', response.status);
+
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        // Log the error but don't throw - return default data instead
+        console.error(`Dashboard API error! status: ${response.status}`);
+        const errorText = await response.text();
+        console.error('Error details:', errorText);
+        return initializeDashboard();
       }
 
       const data = await response.json();
-      return data.data;
+      console.log('Dashboard data received:', data);
+      return data.data || data;
 
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
-      // Return initialized dashboard even if there's an error
       return initializeDashboard();
     }
   };
 
-  // API call to get notifications
+  // API call to get notifications - Modified to make request regardless of shopId
   const getNotifications = async (shopId) => {
     try {
-      // Only make API call if shop ID is available
-      if (!shopId) {
+      const token = getAuthToken();
+      if (!token) {
+        console.log('No auth token available for notifications');
         return [];
       }
 
-      const response = await fetch(`${API_BASE_URL}/api/notifications/shop/${shopId}?unreadOnly=false`, {
+      // Construct URL - use shopId if available, otherwise get user's notifications
+      const url = shopId 
+        ? `${API_BASE_URL}/api/notifications/shop/${shopId}?unreadOnly=false`
+        : `${API_BASE_URL}/api/notifications?unreadOnly=false`;
+
+      console.log('Making notifications request to:', url);
+
+      const response = await fetch(url, {
         method: 'GET',
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         }
       });
 
+      console.log('Notifications response status:', response.status);
+
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        console.error(`Notifications API error! status: ${response.status}`);
+        const errorText = await response.text();
+        console.error('Error details:', errorText);
+        return [];
       }
 
       const data = await response.json();
-      return data.data || [];
+      console.log('Notifications data received:', data);
+      return data.data || data.notifications || [];
 
     } catch (error) {
       console.error('Error fetching notifications:', error);
@@ -103,18 +177,28 @@ const Dashboard = () => {
   // API call to mark notification as read
   const markNotificationAsRead = async (notificationId) => {
     try {
+      const token = getAuthToken();
+      if (!token) {
+        console.log('No auth token available for marking notification as read');
+        return false;
+      }
+
+      console.log('Marking notification as read:', notificationId);
+
       const response = await fetch(`${API_BASE_URL}/api/notifications/${notificationId}/read`, {
         method: 'PUT',
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         }
       });
 
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        console.error(`Mark notification as read error! status: ${response.status}`);
+        return false;
       }
       
+      console.log('Notification marked as read successfully');
       return true;
     } catch (error) {
       console.error('Error marking notification as read:', error);
@@ -122,41 +206,85 @@ const Dashboard = () => {
     }
   };
 
+  // Check if user has necessary authentication
+  const checkUserAuthentication = () => {
+    const token = getAuthToken();
+    const userData = localStorage.getItem('userData');
+    
+    if (!token) {
+      console.warn('No authentication token found');
+      // Optionally redirect to login
+      // navigate('/login');
+      return false;
+    }
+    
+    if (!userData) {
+      console.warn('No user data found');
+      return false;
+    }
+    
+    return true;
+  };
+
   useEffect(() => {
     const fetchDashboardData = async () => {
+      console.log('=== Dashboard Initialization Started ===');
+      
       try {
         setError(null);
         setLoading(true);
-        const shopId = getCurrentShopId();
         
+        // Check authentication first
+        if (!checkUserAuthentication()) {
+          console.log('Authentication check failed - using default dashboard');
+          setDashboardData(initializeDashboard());
+          setLoading(false);
+          return;
+        }
+        
+        const shopId = getCurrentShopId();
+        const currentShop = getCurrentShop();
+        setHasShop(!!shopId);
+        
+        console.log('Shop ID status:', shopId ? `Found: ${shopId}` : 'Not found');
+        console.log('Current shop details:', currentShop?.name || 'No shop name');
+        
+        // Always make API calls - let the server handle missing shopId
+        console.log('Fetching dashboard data...');
         const dashboardResponse = await getDashboardSummary(shopId);
+        
+        console.log('Fetching notifications...');
         const notifications = await getNotifications(shopId);
 
         // Format dashboard data with default values
         const formattedData = {
           todayStats: {
-            revenue: dashboardResponse.todayStats?.revenue || 0,
-            transactions: dashboardResponse.todayStats?.transactions || 0,
-            averageOrderValue: dashboardResponse.todayStats?.averageOrderValue || 0
+            revenue: dashboardResponse?.todayStats?.revenue || 0,
+            transactions: dashboardResponse?.todayStats?.transactions || 0,
+            averageOrderValue: dashboardResponse?.todayStats?.averageOrderValue || 0
           },
           inventory: {
-            totalProducts: dashboardResponse.inventory?.totalProducts || 0,
-            lowStockCount: dashboardResponse.inventory?.lowStockCount || 0,
-            lowStockProducts: dashboardResponse.lowStockProducts || []
+            totalProducts: dashboardResponse?.inventory?.totalProducts || 0,
+            lowStockCount: dashboardResponse?.inventory?.lowStockCount || 0,
+            lowStockProducts: dashboardResponse?.inventory?.lowStockProducts || dashboardResponse?.lowStockProducts || []
           },
           customers: {
-            totalCustomers: dashboardResponse.customers?.totalCustomers || 0
+            totalCustomers: dashboardResponse?.customers?.totalCustomers || 0
           },
-          notifications: notifications.slice(0, 5) // Get top 5 notifications
+          notifications: Array.isArray(notifications) ? notifications.slice(0, 5) : []
         };
 
+        console.log('Final formatted dashboard data:', formattedData);
         setDashboardData(formattedData);
+        
       } catch (error) {
-        console.error('Error fetching dashboard data:', error);
-        // Initialize dashboard instead of showing error
+        console.error('Error in fetchDashboardData:', error);
+        setError(error.message);
+        // Still set default dashboard data instead of leaving it null
         setDashboardData(initializeDashboard());
       } finally {
         setLoading(false);
+        console.log('=== Dashboard Initialization Complete ===');
       }
     };
 
@@ -193,6 +321,10 @@ const Dashboard = () => {
         )
       });
     }
+  };
+
+  const handleRetry = () => {
+    window.location.reload();
   };
 
   const quickActions = [
@@ -235,26 +367,31 @@ const Dashboard = () => {
     );
   }
 
-  // If dashboardData is still null after loading, show error
-  if (!dashboardData) {
+  // Error state with more details
+  if (error && !dashboardData) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center p-6">
+        <div className="text-center p-6 max-w-md">
           <div className="text-red-500 text-6xl mb-4">⚠️</div>
-          <h2 className="text-xl font-semibold text-gray-800 mb-2">Something went wrong</h2>
-          <p className="text-gray-600 mb-4">Failed to initialize dashboard. Please try again.</p>
+          <h2 className="text-xl font-semibold text-gray-800 mb-2">Unable to Load Dashboard</h2>
+          <p className="text-gray-600 mb-2">There was an error loading your dashboard data.</p>
+          <p className="text-sm text-gray-500 mb-4">{error}</p>
           <button 
-            onClick={() => window.location.reload()} 
-            className="bg-black text-white px-4 py-2 rounded-lg hover:bg-gray-800 transition-colors"
+            onClick={handleRetry}
+            className="bg-black text-white px-4 py-2 rounded-lg hover:bg-gray-800 transition-colors mr-2"
           >
             Retry
+          </button>
+          <button 
+            onClick={() => navigate('/login')}
+            className="bg-gray-200 text-gray-800 px-4 py-2 rounded-lg hover:bg-gray-300 transition-colors"
+          >
+            Go to Login
           </button>
         </div>
       </div>
     );
   }
-
-  const shopId = getCurrentShopId();
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -285,8 +422,8 @@ const Dashboard = () => {
 
         {/* Dashboard Content */}
         <main className="p-4 lg:p-6 pt-20">
-          {/* Shop selection banner */}
-          {!shopId && (
+          {/* Shop selection banner - Only show if no shop but user is authenticated */}
+          {!hasShop && getAuthToken() && (
             <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-6 rounded">
               <div className="flex">
                 <div className="flex-shrink-0">
@@ -294,7 +431,7 @@ const Dashboard = () => {
                 </div>
                 <div className="ml-3">
                   <p className="text-sm text-yellow-700">
-                    <strong>No shop selected.</strong> You can still use the dashboard, but data will be limited. 
+                    <strong>No shop selected.</strong> Some data may be limited without a shop context. 
                     <button 
                       onClick={() => navigate('/shops/new')}
                       className="ml-2 font-medium underline text-yellow-700 hover:text-yellow-600"
@@ -314,9 +451,42 @@ const Dashboard = () => {
             </div>
           )}
 
+          {/* Authentication warning */}
+          {!getAuthToken() && (
+            <div className="bg-red-50 border-l-4 border-red-400 p-4 mb-6 rounded">
+              <div className="flex">
+                <div className="flex-shrink-0">
+                  <AlertTriangle className="h-5 w-5 text-red-400" />
+                </div>
+                <div className="ml-3">
+                  <p className="text-sm text-red-700">
+                    <strong>Not authenticated.</strong> Please log in to see your actual data.
+                    <button 
+                      onClick={() => navigate('/login')}
+                      className="ml-2 font-medium underline text-red-700 hover:text-red-600"
+                    >
+                      Go to Login
+                    </button>
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
           <div className="mb-6">
-            <h1 className="text-xl sm:text-2xl font-bold text-black mb-2">Dashboard Overview</h1>
-            <p className="text-sm sm:text-base text-gray-600">Welcome back! Here's what's happening in your store today.</p>
+            <h1 className="text-xl sm:text-2xl font-bold text-black mb-2 p-5">
+       Shop Name 
+              {getCurrentShop()?.name && (
+                <span className="text-l font-normal text-gray-600 ml-2">
+                  - {getCurrentShop().name}
+                </span>
+              )}
+            </h1>
+            <p className="text-sm sm:text-base text-gray-600">
+              {getAuthToken() 
+                ? "Welcome back! Here's what's happening in your store today." 
+                : "Welcome! Please log in to see your actual store data."}
+            </p>
           </div>
 
           {/* Stats Cards */}
@@ -326,7 +496,7 @@ const Dashboard = () => {
                 <div>
                   <p className="text-xs sm:text-sm font-medium text-gray-600">Today's Revenue</p>
                   <p className="text-lg sm:text-2xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent">
-                    {formatCurrency(dashboardData.todayStats.revenue)}
+                    {formatCurrency(dashboardData?.todayStats?.revenue)}
                   </p>
                 </div>
                 <div className="p-2 lg:p-3 bg-green-100 rounded-full">
@@ -339,7 +509,7 @@ const Dashboard = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-xs sm:text-sm font-medium text-gray-600">Transactions</p>
-                  <p className="text-lg sm:text-2xl font-bold text-black">{dashboardData.todayStats.transactions}</p>
+                  <p className="text-lg sm:text-2xl font-bold text-black">{dashboardData?.todayStats?.transactions || 0}</p>
                 </div>
                 <div className="p-2 lg:p-3 bg-blue-100 rounded-full">
                   <ShoppingCart size={20} className="text-blue-600 sm:w-6 sm:h-6" />
@@ -352,7 +522,7 @@ const Dashboard = () => {
                 <div>
                   <p className="text-xs sm:text-sm font-medium text-gray-600">Avg Order Value</p>
                   <p className="text-lg sm:text-2xl font-bold text-black">
-                    {formatCurrency(dashboardData.todayStats.averageOrderValue)}
+                    {formatCurrency(dashboardData?.todayStats?.averageOrderValue)}
                   </p>
                 </div>
                 <div className="p-2 lg:p-3 bg-purple-100 rounded-full">
@@ -365,7 +535,7 @@ const Dashboard = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-xs sm:text-sm font-medium text-gray-600">Total Customers</p>
-                  <p className="text-lg sm:text-2xl font-bold text-black">{dashboardData.customers.totalCustomers}</p>
+                  <p className="text-lg sm:text-2xl font-bold text-black">{dashboardData?.customers?.totalCustomers || 0}</p>
                 </div>
                 <div className="p-2 lg:p-3 bg-orange-100 rounded-full">
                   <Users size={20} className="text-orange-600 sm:w-6 sm:h-6" />
@@ -382,15 +552,15 @@ const Dashboard = () => {
                 <div className="flex items-center justify-between">
                   <h2 className="text-base lg:text-lg font-semibold text-black">Low Stock Alerts</h2>
                   <span className="bg-red-100 text-red-800 text-xs px-2 py-1 rounded-full">
-                    {dashboardData.inventory.lowStockCount} items
+                    {dashboardData?.inventory?.lowStockCount || 0} items
                   </span>
                 </div>
               </div>
               <div className="p-4 lg:p-6 max-h-96 overflow-y-auto">
-                {dashboardData.inventory.lowStockProducts.length > 0 ? (
+                {dashboardData?.inventory?.lowStockProducts?.length > 0 ? (
                   <div className="space-y-3 lg:space-y-4">
                     {dashboardData.inventory.lowStockProducts.map((product, index) => (
-                      <div key={product.id || `low-stock-${index}`} className="flex items-center justify-between p-3 bg-red-50 rounded-lg">
+                      <div key={product.id || product._id || `low-stock-${index}`} className="flex items-center justify-between p-3 bg-red-50 rounded-lg">
                         <div className="flex items-center">
                           <div className="p-2 bg-red-100 rounded-full mr-3">
                             <AlertTriangle size={14} className="text-red-600 sm:w-4 sm:h-4" />
@@ -398,12 +568,12 @@ const Dashboard = () => {
                           <div>
                             <p className="font-medium text-black text-sm lg:text-base">{product.name || 'Product'}</p>
                             <p className="text-xs lg:text-sm text-gray-600">
-                              {product.currentQuantity || 0} left (min: {product.minQuantity || 10})
+                              {product.currentQuantity || product.quantity || 0} left (min: {product.minQuantity || 10})
                             </p>
                           </div>
                         </div>
                         <p className="text-xs lg:text-sm font-medium text-black">
-                          {formatCurrency(product.pricing?.sellingPrice || 0)}
+                          {formatCurrency(product.pricing?.sellingPrice || product.price || 0)}
                         </p>
                       </div>
                     ))}
@@ -420,13 +590,13 @@ const Dashboard = () => {
                 <h2 className="text-base lg:text-lg font-semibold text-black">Recent Notifications</h2>
               </div>
               <div className="p-4 lg:p-6 max-h-96 overflow-y-auto">
-                {dashboardData.notifications.length > 0 ? (
+                {dashboardData?.notifications?.length > 0 ? (
                   <div className="space-y-3 lg:space-y-4">
-                    {dashboardData.notifications.map((notification) => (
+                    {dashboardData.notifications.map((notification, index) => (
                       <div 
-                        key={notification._id} 
+                        key={notification._id || notification.id || `notification-${index}`} 
                         className={`flex items-start space-x-3 cursor-pointer hover:bg-gray-50 p-2 rounded-lg transition-colors ${notification.isRead ? 'opacity-70' : ''}`}
-                        onClick={() => handleMarkAsRead(notification._id)}
+                        onClick={() => notification._id && handleMarkAsRead(notification._id)}
                       >
                         <div className="p-2 bg-gray-100 rounded-full">
                           <Bell size={14} className="text-gray-600 sm:w-4 sm:h-4" />

@@ -57,18 +57,23 @@ const POS = () => {
 
   // Initialize user data and fetch initial data
   useEffect(() => {
-    const storedUserData = localStorage.getItem('userData');
-    const storedAuthToken = localStorage.getItem('authToken');
-    
-    if (storedUserData && storedAuthToken) {
-      setUserData(JSON.parse(storedUserData));
-      setAuthToken(storedAuthToken);
+    try {
+      const storedUserData = localStorage.getItem('userData');
+      const storedAuthToken = localStorage.getItem('authToken');
+
+      if (storedUserData && storedAuthToken) {
+        const parsedUserData = JSON.parse(storedUserData);
+        setUserData(parsedUserData);
+        setAuthToken(storedAuthToken);
+      }
+    } catch (err) {
+      console.error('Error parsing userData from localStorage:', err);
     }
   }, []);
 
   // Fetch data when user data is available
   useEffect(() => {
-    if (userData?.currentShop && authToken) {
+    if (userData?.currentShop?._id && authToken) {
       fetchProducts();
       fetchCustomers();
       fetchDashboardData();
@@ -102,7 +107,7 @@ const POS = () => {
   const fetchProducts = async () => {
     try {
       setLoading(true);
-      const response = await apiCall(`/api/products/shop/${userData.currentShop}`);
+      const response = await apiCall(`/api/products/shop/${userData.currentShop._id}`);
       if (response.success) {
         setProducts(response.data);
       }
@@ -127,7 +132,7 @@ const POS = () => {
         method: 'POST',
         body: JSON.stringify({ 
           query, 
-          shopId: userData.currentShop 
+          shopId: userData.currentShop._id
         })
       });
       
@@ -157,7 +162,7 @@ const POS = () => {
   // Fetch customers
   const fetchCustomers = async () => {
     try {
-      const response = await apiCall(`/api/customers?shopId=${userData.currentShop}`);
+      const response = await apiCall(`/api/customers/shop/${userData.currentShop._id}`);
       if (response.success) {
         setCustomers(response.data);
       }
@@ -173,7 +178,7 @@ const POS = () => {
         method: 'POST',
         body: JSON.stringify({ 
           ...customerData, 
-          shopId: userData.currentShop 
+          shopId: userData.currentShop._id
         })
       });
       
@@ -190,7 +195,7 @@ const POS = () => {
   // Fetch dashboard data
   const fetchDashboardData = async () => {
     try {
-      const response = await apiCall(`/api/analytics/dashboard/${userData.currentShop}`);
+      const response = await apiCall(`/api/dashboard/${userData.currentShop._id}`);
       if (response.success) {
         setDashboardData(response.data);
       }
@@ -262,8 +267,8 @@ const POS = () => {
         product: product._id,
         productName: product.name,
         quantity: 1,
-        unitPrice: product.sellingPrice,
-        totalPrice: product.sellingPrice
+        unitPrice: product.pricing.sellingPrice,
+        totalPrice: product.pricing.sellingPrice
       }]);
     }
 
@@ -334,7 +339,7 @@ const POS = () => {
       const change = paid - totals.total;
 
       const saleData = {
-        shopId: userData.currentShop,
+        shopId: userData.currentShop._id,
         customerId: selectedCustomer?._id,
         cashier: userData.id,
         items: cartItems.map(item => ({
@@ -790,9 +795,10 @@ const POS = () => {
               </div>
               <div className="flex justify-between items-start mb-1 md:mb-2">
                 <h3 className="font-medium text-gray-900 text-xs md:text-sm leading-tight">{product.name}</h3>
-                <span className="text-sm md:text-lg font-bold text-gray-900 ml-1">{formatCurrency(product.sellingPrice)}</span>
+                <span className="text-sm md:text-lg font-bold text-gray-900 ml-1">{formatCurrency(product.pricing.sellingPrice)}</span>
               </div>
-              <div className="text-xs text-gray-500 mb-1 md:mb-2">Stock: {product.stock}</div>
+              {/* FIX: Access currentQuantity property */}
+              <div className="text-xs text-gray-500 mb-1 md:mb-2">Stock: {product.stock?.currentQuantity || 0}</div>
               <div className="flex justify-between items-center">
                 <span className="inline-block bg-gray-100 text-gray-600 text-xs px-2 py-1 rounded">
                   {product.category?.name || 'Uncategorized'}
