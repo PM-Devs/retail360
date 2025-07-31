@@ -477,7 +477,7 @@ const Dashboard = () => {
             <h1 className="text-xl sm:text-2xl font-bold text-black mb-2 p-5">
        Shop Name 
               {getCurrentShop()?.name && (
-                <span className="text-l font-normal text-gray-600 ml-2">
+                <span className="text-lg font-normal text-gray-600 ml-2">
                   - {getCurrentShop().name}
                 </span>
               )}
