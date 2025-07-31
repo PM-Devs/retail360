@@ -485,7 +485,7 @@ const Login = () => {
                   <path d="M12 2L2 7v10c0 5.55 3.84 9.74 9 11 5.16-1.26 9-5.45 9-11V7l-10-5z" fill="#10b981"/>
                   <path d="M9 12l2 2 4-4" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                 </svg>
-                <span className="ml-1">BootCode</span>
+                <span className="ml-1">Team</span>
               </p>
             </div>
           </div>

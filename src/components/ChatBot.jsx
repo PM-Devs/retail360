@@ -90,7 +90,7 @@ const ChatBot = ({ dashboardData, isVisible, onClose }) => {
   const initialMessages = [
     {
       type: 'bot',
-      content: "Hi there! I'm AFIA AI, your Cognitive User Interface developed by Prince Mawuko Dzorkpe. 👋"
+      content: "Hi there! I'm AFIA AI, your Cognitive User Interface developed by Godfred kubra👋"
     },
     {
       type: 'bot',
