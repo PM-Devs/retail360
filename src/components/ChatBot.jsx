@@ -91,15 +91,8 @@ const ChatBot = ({ dashboardData, isVisible, onClose }) => {
     {
       type: 'bot',
       content: "Hi there! I'm AFIA AI, your Cognitive User Interface developed by Godfred kubra👋"
-    },
-    {
-      type: 'bot',
-      content: `I've analyzed your store data and noticed you've made ${dashboardData?.todayStats?.transactions || 0} transactions today with revenue of GHS ${dashboardData?.todayStats?.revenue?.toFixed(2) || '0.00'}!`
-    },
-    {
-      type: 'bot',
-      content: "I can help you with inventory management, sales analysis, customer insights, transaction processing, and business recommendations. What would you like to know?"
     }
+
   ];
 
   const quickActions = [
