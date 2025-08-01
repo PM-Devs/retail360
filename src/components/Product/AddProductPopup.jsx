@@ -8,7 +8,7 @@ const AddProductPopup = ({ isOpen, onClose }) => {
   // Get user data from localStorage
   const userData = JSON.parse(localStorage.getItem('userData') || '{}');
   const shopId = userData?.currentShop?._id;
-  const userId = userData?._id; // Get user ID for addedBy field
+  const userId = userData?.id; // Get user ID for addedBy field
   const authToken = localStorage.getItem('authToken');
   
   const [formData, setFormData] = useState({
