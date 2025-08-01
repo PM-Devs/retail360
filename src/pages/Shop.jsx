@@ -754,6 +754,31 @@ const CreateUserModal = ({
               value={newUser.phone}
               onChange={(e) => setNewUser(prev => ({ ...prev, phone: e.target.value }))}
               className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-black transition-all duration-300"
+              required
+            />
+          </div>
+          
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Password</label>
+            <input
+              type="password"
+              value={newUser.password}
+              onChange={(e) => setNewUser(prev => ({ ...prev, password: e.target.value }))}
+              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-black transition-all duration-300"
+              required
+              minLength={6}
+              placeholder="Minimum 6 characters"
+            />
+          </div>
+          
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">WhatsApp Number (Optional)</label>
+            <input
+              type="tel"
+              value={newUser.whatsappNumber}
+              onChange={(e) => setNewUser(prev => ({ ...prev, whatsappNumber: e.target.value }))}
+              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-black transition-all duration-300"
+              placeholder="WhatsApp number if different from phone"
             />
           </div>
           
@@ -765,10 +790,8 @@ const CreateUserModal = ({
               className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-black transition-all duration-300"
               required
             >
-              <option value="admin">Admin</option>
+              <option value="staff">Staff</option>
               <option value="manager">Manager</option>
-              <option value="cashier">Cashier</option>
-              <option value="inventory">Inventory Manager</option>
             </select>
           </div>
           
@@ -913,25 +936,23 @@ const ShopManagement = () => {
       fetchUserShops(userData.id);
     }
   }, []);
-
-  // Fetch users for current shop
-  const fetchShopUsers = async (shopId) => {
-    try {
-      const response = await fetch(`${API_BASE_URL}/shops/${shopId}/users`, {
-        headers: getAuthHeaders()
-      });
-      
-      if (response.ok) {
-        const data = await response.json();
-        setUsers(data.data || []);
-      } else {
-        console.error('Failed to fetch users');
-      }
-    } catch (error) {
-      console.error('Error fetching users:', error);
+// Fetch users for current shop
+const fetchShopUsers = async (shopId, requestingUserId) => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/shops/${shopId}/staff?requestingUserId=${requestingUserId}`, {
+      headers: getAuthHeaders()
+    });
+    
+    if (response.ok) {
+      const data = await response.json();
+      setUsers(data.data || []);
+    } else {
+      console.error('Failed to fetch users');
     }
-  };
-
+  } catch (error) {
+    console.error('Error fetching users:', error);
+  }
+};
   // API functions
   const fetchUserShops = async (userId) => {
     try {
@@ -939,7 +960,7 @@ const ShopManagement = () => {
       const response = await fetch(`${API_BASE_URL}/users/${userId}/shops`, {
         headers: getAuthHeaders()
       });
-      
+      //staff
       if (response.ok) {
         const data = await response.json();
         
@@ -958,7 +979,7 @@ const ShopManagement = () => {
         
         if (data.data.currentShop) {
           fetchShopStats(data.data.currentShop._id);
-          fetchShopUsers(data.data.currentShop._id);
+          fetchShopUsers(data.data.currentShop._id, userId);
         }
       } else {
         const errorData = await response.json();
@@ -1018,39 +1039,7 @@ const ShopManagement = () => {
       setLoading(false);
     }
   };
-const createUser = async (userData) => {
-  try {
-    setLoading(true);
-    
-    // Add the registeredByUserId to the request body
-    const requestBody = {
-      ...userData,
-      registeredByUserId: currentUser?.id || null // Assuming you have current user context
-    };
-    
-    const response = await fetch(`${API_BASE_URL}/staff/register`, {
-      method: 'POST',
-      headers: getAuthHeaders(),
-      body: JSON.stringify(requestBody)
-    });
-    
-    if (response.ok) {
-      const result = await response.json();
-      await fetchShopUsers(currentShop._id);
-      setShowCreateUserModal(false);
-      setNewUser({ name: '', email: '', role: 'cashier', phone: '' });
-      showNotification('Staff member registered successfully!');
-    } else {
-      const errorData = await response.json();
-      showNotification(errorData.message || 'Failed to register staff member', 'error');
-    }
-  } catch (error) {
-    showNotification('Failed to register staff member', 'error');
-    console.error('Error registering staff member:', error);
-  } finally {
-    setLoading(false);
-  }
-};
+
   const updateShop = async (shopId, updates) => {
     try {
       setLoading(true);
@@ -1203,6 +1192,48 @@ const createUser = async (userData) => {
     return matchesSearch && matchesLevel;
   });
 
+
+  const createUser = async (userData) => {
+  try {
+    setLoading(true);
+    
+    const requestBody = {
+      name: userData.name,
+      email: userData.email,
+      phone: userData.phone,
+      password: userData.password,
+      shopId: currentShop._id,
+      role: userData.role || 'staff',
+      registeredByUserId: currentUser.id,
+      customPermissions: userData.customPermissions || null
+    };
+    
+    const response = await fetch(`${API_BASE_URL}/staff/register`, {
+      method: 'POST',
+      headers: {
+        ...getAuthHeaders(),
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(requestBody)
+    });
+    
+    const result = await response.json();
+    
+    if (response.ok) {
+      await fetchShopUsers(currentShop._id, currentUser.id);
+      setShowCreateUserModal(false);
+      setNewUser({ name: '', email: '', role: 'staff', phone: '', password: '' });
+      showNotification('Staff member registered successfully!');
+    } else {
+      showNotification(result.message || 'Failed to register staff member', 'error');
+    }
+  } catch (error) {
+    showNotification('Failed to register staff member', 'error');
+    console.error('Error registering staff member:', error);
+  } finally {
+    setLoading(false);
+  }
+};
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
       {/* Notification */}
