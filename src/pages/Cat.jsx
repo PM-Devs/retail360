@@ -65,7 +65,7 @@ const CatPage = () => {
         throw new Error('No shop selected');
       }
       
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('authToken');
       if (!token) {
         throw new Error('No authentication token found');
       }
