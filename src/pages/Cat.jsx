@@ -194,7 +194,7 @@ const token = localStorage.getItem('authToken');
         return;
       }
       
-      const token = localStorage.getItem('token');
+    const token = localStorage.getItem('authToken');
       if (!token) {
         throw new Error('No authentication token found');
       }
@@ -237,7 +237,7 @@ const token = localStorage.getItem('authToken');
     if (!window.confirm('Are you sure you want to delete this category?')) return;
     
     try {
-      const token = localStorage.getItem('token');
+  const token = localStorage.getItem('authToken');
       if (!token) {
         throw new Error('No authentication token found');
       }
